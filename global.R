@@ -264,16 +264,16 @@ getContentBasedMovies <- memoise(function(loginID, recLimit) {
   query <- paste("MATCH (u:Person {loginId: ",loginID,"})-[r:REVIEWED]->(m:Movie) ",
                  " WITH m, r, u ",
                  " ORDER BY r.rating DESC LIMIT 5 ",
-                 " MATCH (m)-[:HAS_GENRE|ACTED_IN|DIRECTED]-(t)-[:HAS_GENRE|ACTED_IN|DIRECTED]-(other:Movie) ",
+                 " MATCH (m)-[:HAS_GENRE|ACTED_IN|DIRECTED|PRODUCED_BY|PRODUCED_IN]-(t)-[:HAS_GENRE|ACTED_IN|DIRECTED|PRODUCED_BY|PRODUCED_IN]-(other:Movie) ",
                  " WHERE NOT EXISTS( (u)-[:REVIEWED]->(other) ) ",
                  " WITH m, other, COUNT(t) AS intersection, COLLECT(t.name) AS i ",
-                 " MATCH (m)-[:HAS_GENRE|:ACTED_IN|:DIRECTED]-(mt) ",
+                 " MATCH (m)-[:HAS_GENRE|:ACTED_IN|:DIRECTED|PRODUCED_BY|PRODUCED_IN]-(mt) ",
                  " WITH m,other, intersection,i, COLLECT(mt.name) AS s1 ",
-                 " MATCH (other)-[:HAS_GENRE|:ACTED_IN|:DIRECTED]-(ot) ",
+                 " MATCH (other)-[:HAS_GENRE|:ACTED_IN|:DIRECTED|PRODUCED_BY|PRODUCED_IN]-(ot) ",
                  " WITH m,other,intersection,i, s1, COLLECT(ot.name) AS s2 ",
                  " WITH m,other,intersection,s1,s2 ",
                  " WITH m,other,intersection,s1+[x IN s2 WHERE NOT x IN s1] AS union, apoc.text.join(s1, '|') AS s1_txt, apoc.text.join(s2, '|') AS s2_txt ",
-                 " RETURN m.title, other.title, other.avg_rating, other.poster, s1_txt,s2_txt,((1.0*intersection)/SIZE(union)) AS jaccard ORDER BY jaccard DESC LIMIT ", recLimit, sep="")
+                 " RETURN DISTINCT m.title, other.title, other.avg_rating, other.poster, s1_txt,s2_txt,((1.0*intersection)/SIZE(union)) AS jaccard ORDER BY jaccard DESC LIMIT ", recLimit, sep="")
   print(query)
   R <- query %>% 
     call_neo4j(con, type = "row") 
@@ -332,6 +332,84 @@ getCollaborativeFilteringMovies <- memoise(function(loginID, recLimit) {
 # nrow(m$m.title)
 
 ###############################################################################################
+# Function getCollaborativeFilteringMovies
+#
+# Description:  Return a neo list that contains the graph data of the movies that are similar to users' favorite movies. 
+#               Using "memoise" to automatically cache the results
+# Input:        userID - User ID
+#               recLimit - number of records to be returned
+# Output:       Return a neo list that contains the graph data of recently rated movies by the given user. 
+###############################################################################################
+getActorMovies <- memoise(function(loginID, recLimit) {
+  
+  print("global.R")
+  print(loginID)
+  print(recLimit)
+  
+  # loginID <- 4
+  # recLimit <- 10
+  query <- paste(" MATCH (u:Person {loginId: ",loginID,"})-[r:REVIEWED]->(m:Movie) ",
+                 " WITH m, r, u ",
+                 " ORDER BY r.rating DESC LIMIT 20 ",
+                 " MATCH (m)<-[:ACTED_IN]-(a:Person)-[:ACTED_IN]->(rec) ",
+                 " WHERE NOT EXISTS( (u)-[:REVIEWED]->(rec)) ",
+                 " WITH m, rec, COUNT(a) AS as ",
+                 " RETURN rec.title, rec.avg_rating, rec.poster, as AS score ORDER BY score DESC LIMIT ",recLimit, sep="")
+  print(query)
+  R <- query %>% 
+    call_neo4j(con, type = "row") 
+  
+  return (R)
+})
+
+# m <- getActorMovies(1,10)
+# p<-m$rec.title[1,]$value
+# print(p)
+
+###############################################################################################
+# Function getTermMatrix
+#
+# Description:  Return a matrix that contains genres of the movies that satisfies the input criteria. 
+#               Using "memoise" to automatically cache the results
+# Input:        from_year - Starting movie production year
+#               to_year   - Ending movie production year
+#               min_rating - Minimum average ratings that the movie should have
+#               max_rating - Maximum average ratings that the movie should have
+# Output:       Return a matrix that contains genres of the movies that satisfies the input criteria.
+###############################################################################################
+getTermMatrix1 <- memoise(function(from_year, to_year, min_rating, max_rating) {
+
+  print("global.R")
+  print(from_year)
+  print(to_year)
+  print(min_rating)
+  print(max_rating)
+  genres_df1 <- genres_df %>%
+    filter(between(genres_df$year, from_year, to_year), between(genres_df$avgRating, min_rating, max_rating))
+
+  print("# of genre_df1")
+  print(nrow(genres_df1))
+
+  # print(min(genres_df$year))
+  # print(max(genres_df$year))
+  if (nrow(genres_df1) == 0 ){
+    text <- c("NOTHING")
+  }
+  else {
+    text <- as.vector(genres_df1$genres)
+  }
+
+
+  myCorpus = Corpus(VectorSource(text))
+  myDTM = TermDocumentMatrix(myCorpus,
+                             control = list(minWordLength = 1))
+
+  m = as.matrix(myDTM)
+
+  sort(rowSums(m), decreasing = TRUE)
+})
+
+###############################################################################################
 # Function getTermMatrix
 #
 # Description:  Return a matrix that contains genres of the movies that satisfies the input criteria. 
@@ -344,26 +422,35 @@ getCollaborativeFilteringMovies <- memoise(function(loginID, recLimit) {
 ###############################################################################################
 getTermMatrix <- memoise(function(from_year, to_year, min_rating, max_rating) {
   
-  print("global.R")
+  print("global.R - getTermMatrix")
   print(from_year)
   print(to_year)
   print(min_rating)
   print(max_rating)
-  genres_df1 <- genres_df %>%
-    filter(between(genres_df$year, from_year, to_year), between(genres_df$avgRating, min_rating, max_rating))
+  to_year1<-to_year+1
+  # genres_df1 <- genres_df %>%
+  #   filter(between(genres_df$year, from_year, to_year), between(genres_df$avgRating, min_rating, max_rating))
+  # 
+  # print("# of genre_df1")
+  # print(nrow(genres_df1))
   
-  print("# of genre_df1")
-  print(nrow(genres_df1))
+  query <- paste(" MATCH (g:Genre)-[HAS_GENRE]-(m:Movie) ",
+                 " WHERE m.year >= ",from_year," and m.year <= ",to_year1," ",
+                 " AND m.avg_rating >= ",min_rating," and m.avg_rating <= ",max_rating," ",
+                 " RETURN g.name as genre", sep="")
+  
+  print(query)
+  R <- query %>% 
+    call_neo4j(con, type = "row") 
   
   # print(min(genres_df$year))
   # print(max(genres_df$year))
-  if (nrow(genres_df1) == 0 ){
+  if (nrow(R$genre) == 0 ){
     text <- c("NOTHING")
   }
   else {
-    text <- as.vector(genres_df1$genres)
+    text <- as.vector(R$genre[,1]$value)
   }
-  
   
   myCorpus = Corpus(VectorSource(text))
   myDTM = TermDocumentMatrix(myCorpus,
@@ -373,6 +460,11 @@ getTermMatrix <- memoise(function(from_year, to_year, min_rating, max_rating) {
   
   sort(rowSums(m), decreasing = TRUE)
 })
+ # t<-getTermMatrix(1905,2018,1,5)
+ # print(t)
+ # 
+ # t<-getTermMatrix1(1905,2018,1,5)
+ # print(t)
 
 ###############################################################################################
 # Function getTermMatrix
@@ -497,34 +589,71 @@ getUserRatingHistogramDF <- memoise(function() {
 #               minRatingCnt - Minimum number of ratings the movies should have
 # Output:       Return a data frame that contains top 10 movies that satisfy the input criteria.
 ###############################################################################################
+# getTop10MovieDF <- memoise(function(from_year, to_year, minRatingCnt) {
+#   
+#   print("global.R - top10Movie")
+#   
+#   top10_df1 <- ratings_df %>%
+#     filter(between(ratedYear, from_year, to_year))
+#   
+#   # Find the average rating for each movie in each year
+#   top10_df2 <- aggregate(top10_df1[,3], list(top10_df1$movieId), mean)
+#   colnames(top10_df2)<- c("movieId", "avgRating")
+#   
+#   top10_df3 <- top10_df1 %>%
+#     group_by(movieId) %>%
+#     summarise(ratingCnt=n())
+#   
+#   top10_df4 <- left_join(top10_df2,top10_df3,c("movieId"))
+#   
+#   # Remove the movies that has number of ratings less than minRatingCnt
+#   top10_df5 <- top10_df4 %>%
+#     filter(ratingCnt>=minRatingCnt)
+#   
+#   top10_df6 <- top10_df5 %>%
+#     arrange(desc(top10_df5$avgRating, top10_df5$ratingCnt))
+#   
+#   top10_df7 <- head(top10_df6,10)
+#   
+#   return(top10_df7)
+# })
+
+###############################################################################################
+# Function getTop10MovieDF
+#
+# Description:  Return a data frame that contains top 10 movies that satisfy the input criteria. 
+#               Using "memoise" to automatically cache the results
+# Input:        from_year - Starting year of the ratings
+#               to_year   - Ending year of the ratings
+#               minRatingCnt - Minimum number of ratings the movies should have
+# Output:       Return a data frame that contains top 10 movies that satisfy the input criteria.
+###############################################################################################
 getTop10MovieDF <- memoise(function(from_year, to_year, minRatingCnt) {
+
+  print("global.R - getTop10MovieDF")
+  print(from_year)
+  print(to_year)
+  print(minRatingCnt)
   
-  print("global.R - top10Movie")
+  # loginID <- 4
+  # recLimit <- 10
+  to_year1 = to_year + 1
   
-  top10_df1 <- ratings_df %>%
-    filter(between(ratedYear, from_year, to_year))
+  query <- paste(" MATCH (m:Movie)-[r:REVIEWED]-(u:Person) ",
+                 " WITH m,r, datetime({year: ",from_year,"}) as y1, datetime({year: ",to_year1,"}) as y2 ",
+                 " WHERE r.timestamp >= y1.epochSeconds and r.timestamp < y2.epochSeconds ",
+                 " WITH m.title AS title, m.poster as poster, AVG(r.rating) AS avg_rating, COUNT(r.rating) as rating_cnt ",
+                 " WHERE rating_cnt > ", minRatingCnt,
+                 " RETURN title, poster, avg_rating, rating_cnt ",
+                 " ORDER BY avg_rating DESC LIMIT 10", sep="")
   
-  # Find the average rating for each movie in each year
-  top10_df2 <- aggregate(top10_df1[,3], list(top10_df1$movieId), mean)
-  colnames(top10_df2)<- c("movieId", "avgRating")
+  print(query)
+  R <- query %>% 
+    call_neo4j(con, type = "row") 
   
-  top10_df3 <- top10_df1 %>%
-    group_by(movieId) %>%
-    summarise(ratingCnt=n())
-  
-  top10_df4 <- left_join(top10_df2,top10_df3,c("movieId"))
-  
-  # Remove the movies that has number of ratings less than minRatingCnt
-  top10_df5 <- top10_df4 %>%
-    filter(ratingCnt>=minRatingCnt)
-  
-  top10_df6 <- top10_df5 %>%
-    arrange(desc(top10_df5$avgRating, top10_df5$ratingCnt))
-  
-  top10_df7 <- head(top10_df6,10)
-  
-  return(top10_df7)
+  return (R)
 })
 
-
+# m<-getTop10MovieDF(2000,2001,5)
+# head(m)
 
