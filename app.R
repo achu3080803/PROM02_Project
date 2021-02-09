@@ -19,7 +19,7 @@ ui <- dashboardPage(
     sidebarMenu(
       menuItem("Recommended Movies", tabName = "recommended_movies", icon = icon("film")),
       menuItem("Basic Analysis", tabName = "analysis", icon = icon("th")),
-      menuItem("Graph Analysis", tabName = "graph", icon = icon("th"))
+      menuItem("Deep Analysis", tabName = "graph", icon = icon("th"))
     )
   ),
   dashboardBody(
@@ -104,7 +104,7 @@ ui <- dashboardPage(
                     sliderInput("rating",
                                 "Average Rating:",
                                 min = 1,  max = 5, value = c(1,5)),
-                    actionButton("update", "Change"),
+                    actionButton("update", "Update"),
                     hr(),
                     sliderInput("freq",
                                 "Minimum Frequency:",
@@ -160,18 +160,26 @@ ui <- dashboardPage(
       tabItem(
         tabName = "graph",
         fluidRow(
-          h1("Graph Analysis"),
+          h1("Deep Analysis"),
           #selectizeInput("selectUser", "Login as", unique(ratings_df$userId))
-          selectizeInput("selectUser", "User", all_userid_df$value)
+          selectizeInput("selectUser1", "User", all_userid_df$value),
+          selectizeInput("selectCategory", "Category", c("Movies similar to what you like","Others similar to you like these movies","Movies with your favorite actors / actresses"))
         ),
         fluidRow(
+          htmlOutput("selectedMovieCategory"),
+          x <- uiOutput('radioTest'),
+          actionButton('submit', label = "Submit"),
+          br(),
+          #print(paste("Radiobutton response is:", "reply")),
+          textOutput('text')
+        ),
          # visNetworkOutput("myNetId",
          #                  height <- "1200",
          #                  width <- "600"),
          visNetworkOutput("movieGraph",
                          height <- "1200",
                          width <- "1200")
-        )
+        #)
       )
     )
   )
@@ -362,10 +370,10 @@ server <- function(input, output) {
     #print(currUser)
     #print(length(m_graph$nodes))
     m_posters <- append(m_posters, '<div>')
-    for (i in 1:nrow(m_movies$other.title)){
-      movie_title <- m_movies$other.title[i,]$value
-      movie_poster <- m_movies$other.poster[i,]$value
-      movie_rating <- m_movies$other.avg_rating[i,]$value
+    for (i in 1:nrow(m_movies$title)){
+      movie_title <- m_movies$title[i,]$value
+      movie_poster <- m_movies$poster[i,]$value
+      movie_rating <- m_movies$avg_rating[i,]$value
       star_rating <- movie_rating/5 * 100
       m_posters <- append(m_posters, '<div class="gallery">')
       m_posters <- append(m_posters, paste0('<img src="',movie_poster,'" alt="',movie_title,'" height="',poster.height,'" width="',poster.width,'" ContentType="Images/jpeg" >'))
@@ -428,10 +436,10 @@ server <- function(input, output) {
     #print(currUser)
     #print(length(m_graph$nodes))
     m_posters <- append(m_posters, '<div>')
-    for (i in 1:nrow(m_movies$m.title)){
-      movie_title <- m_movies$m.title[i,]$value
-      movie_poster <- m_movies$m.poster[i,]$value
-      movie_rating <- m_movies$m.avg_rating[i,]$value
+    for (i in 1:nrow(m_movies$title)){
+      movie_title <- m_movies$title[i,]$value
+      movie_poster <- m_movies$poster[i,]$value
+      movie_rating <- m_movies$avg_rating[i,]$value
       star_rating <- movie_rating/5 * 100
       m_posters <- append(m_posters, '<div class="gallery">')
       m_posters <- append(m_posters, paste0('<img src="',movie_poster,'" alt="',movie_title,'" height="',poster.height,'" width="',poster.width,'" ContentType="Images/jpeg" >'))
@@ -494,10 +502,10 @@ server <- function(input, output) {
     #print(currUser)
     #print(length(m_graph$nodes))
     m_posters <- append(m_posters, '<div>')
-    for (i in 1:nrow(m_movies$rec.title)){
-      movie_title <- m_movies$rec.title[i,]$value
-      movie_poster <- m_movies$rec.poster[i,]$value
-      movie_rating <- m_movies$rec.avg_rating[i,]$value
+    for (i in 1:nrow(m_movies$title)){
+      movie_title <- m_movies$title[i,]$value
+      movie_poster <- m_movies$poster[i,]$value
+      movie_rating <- m_movies$avg_rating[i,]$value
       star_rating <- movie_rating/5 * 100
       m_posters <- append(m_posters, '<div class="gallery">')
       m_posters <- append(m_posters, paste0('<img src="',movie_poster,'" alt="',movie_title,'" height="',poster.height,'" width="',poster.width,'" ContentType="Images/jpeg" >'))
@@ -889,7 +897,7 @@ server <- function(input, output) {
   output$avgRatingHistogram <- renderPlot({
     v <- avgRatingHistogram()
     
-    print("# of Rating")
+    print("# of Avg Rating")
     print(nrow(v))
     
     ggplot(data=v, aes(avgRating)) + 
@@ -934,6 +942,182 @@ server <- function(input, output) {
   # Graph TAB (START)
   #
   ###############################################################################################
+  
+  ###############################################################################################
+  # Function get_analyze_curr_login
+  #
+  # Description:  Return the current selected USER ID
+  # Input:        
+  # Output:       Return the current selected USER ID
+  ###############################################################################################
+  get_analyze_user <- reactive({
+    return(input$selectUser1)
+  })
+  
+  ###############################################################################################
+  # Function get_analyze_movie_category
+  #
+  # Description:  Return the current selected Movie Category
+  # Input:        
+  # Output:       Return the current selected Movie Category
+  ###############################################################################################
+  get_analyze_movie_category <- reactive({
+    return(input$selectCategory)
+  })
+  
+  ###############################################################################################
+  # Function compose_movie_tile_html
+  #
+  # Description:  Return a piece of HTML text that represents a movie tile for display
+  # Input:        
+  # Output:       Return a piece of HTML text that represents a movie tile for display
+  ###############################################################################################
+  compose_movie_tile_html <- function(movie_title, movie_poster, poster_height, poster_width, star_rating){
+    movie_tile <- NULL
+    # movie_tile <- append(movie_tile, '<div class="gallery">')
+    # movie_tile <- append(movie_tile, paste0('<img src="',movie_poster,'" alt="',movie_title,'" height="',poster_height,'" width="',poster_width,'" ContentType="Images/jpeg" >'))
+    # movie_tile <- append(movie_tile, '<div class="ratings">')
+    # movie_tile <- append(movie_tile, '<div class="empty-stars"></div>')
+    # movie_tile <- append(movie_tile, paste0('<div class="full-stars", style="width:',star_rating,'%"></div>'))
+    # movie_tile <- append(movie_tile, '</div>')
+    # movie_tile <- append(movie_tile, paste0('<div class="desc" >',movie_title,'</div>'))
+    # movie_tile <- append(movie_tile, '</div>')
+    
+    movie_tile <- paste0('<div class="gallery">',
+                         '<img src="',movie_poster,'" alt="',movie_title,'" height="',poster_height,'" width="',poster_width,'" ContentType="Images/jpeg" >',
+                         '<div class="ratings">',
+                         '<div class="empty-stars"></div>',
+                         '<div class="full-stars", style="width:',star_rating,'%"></div>',
+                         '</div>',
+                         '<div class="desc" >',movie_title,'</div>',
+                         '</div>')
+    
+    return (movie_tile)
+    
+  }
+  
+  ###############################################################################################
+  # Function output$selectedMovieCategory
+  #
+  # Description:  Return the movie posters of the movies that are recommended by the users' favorite actors / actresses
+  # Input:        
+  # Output:       Return the movie posters of the movies that are recommended by the users' favorite actors / actresses
+  ###############################################################################################
+  output$selectedMovieCategory<-renderText({
+    print("selectedMovieCategory")
+    currUser=get_analyze_user()
+    currCategory=get_analyze_movie_category()
+    m_posters=NULL
+    m_movies=NULL
+    rb_choices=NULL
+    
+
+    if (currCategory == "Movies similar to what you like"){
+      m_movies <- getContentBasedMovies(currUser,10)
+    } else if (currCategory == "Others similar to you like these movies"){
+      m_movies <- getCollaborativeFilteringMovies(currUser,10)
+    } else if (currCategory == "Movies with your favorite actors / actresses") {
+      m_movies <- getActorMovies(currUser,10)
+    }
+
+    if (length(m_movies)>0) {
+      m_posters <- append(m_posters, (paste0("<h1>",currCategory,"</h1>")))
+    # 
+    #   m_posters <- append(m_posters, '<div>')
+    #   for (i in 1:nrow(m_movies$title)){
+    #     movie_title <- m_movies$title[i,]$value
+    #     movie_poster <- m_movies$poster[i,]$value
+    #     movie_rating <- m_movies$avg_rating[i,]$value
+    #     star_rating <- movie_rating/5 * 100
+    #     m_tile <- compose_movie_tile_html(movie_title,movie_poster,poster.height,poster.width,star_rating)
+    #     m_posters <- append(m_posters, m_tile)
+    #   }
+    #   m_posters <- append(m_posters, '</div>')
+    # }
+    # else {
+    #   m_posters <- append(m_posters, (paste0("<h1>No movies to analyze</h1>")))
+    }
+
+    print(m_posters)
+  })
+  
+  output$radioTest <- renderUI({
+    print("radioTest")
+    currUser=get_analyze_user()
+    currCategory=get_analyze_movie_category()
+    m_posters=NULL
+    m_movies=NULL
+    rb_choiceNames=list()
+    rb_choiceValues=list()
+    
+    
+    if (currCategory == "Movies similar to what you like"){
+      m_movies <- getContentBasedMovies(currUser,10)
+    } else if (currCategory == "Others similar to you like these movies"){
+      m_movies <- getCollaborativeFilteringMovies(currUser,10)
+    } else if (currCategory == "Movies with your favorite actors / actresses") {
+      m_movies <- getActorMovies(currUser,10)
+    }
+    
+    if (length(m_movies)>0) {
+      
+      for (i in 1:nrow(m_movies$title)){
+        movie_id <- m_movies$movie_id[i,]$value
+        movie_title <- m_movies$title[i,]$value
+        movie_poster <- m_movies$poster[i,]$value
+        movie_rating <- m_movies$avg_rating[i,]$value
+        star_rating <- movie_rating/5 * 100
+        m_tile <- compose_movie_tile_html(movie_title,movie_poster,poster.height,poster.width,star_rating)
+        rb_choiceNames <- append(rb_choiceNames, m_tile)
+        rb_choiceValues <- append(rb_choiceValues, movie_id)
+      }
+      for (i in 1:length(rb_choiceNames)){
+        rb_choiceNames[[i]]<-HTML(rb_choiceNames[[i]])
+      }
+      print("rb_choiceNames:")
+      print(rb_choiceNames)
+      print("rb_choiceValues:")
+      print(rb_choiceValues)
+    }
+    else {
+      rb_choiceNames <- c("No Movies")
+    }
+    
+    # test_rb <- HTML("abc")
+    # test_rb <- list(HTML("abc"), HTML("def"))
+    # 
+    # test_rb1 <- list(HTML("abc"))
+    # test_rb1 <- append(test_rb1, HTML("def"))
+    # test_rb1[[2]]<-HTML(test_rb1[[2]])
+    
+    # The options are dynamically generated on the server
+    radioButtons('movieChoice', currCategory, choiceNames=rb_choiceNames, choiceValues=rb_choiceValues, inline=TRUE)
+    
+    # radioButtons("rb", "Choose one:",
+    #              choiceNames = list(
+    #                icon("calendar"),
+    #                #HTML("<p style='color:red;'>Red Text</p>"),
+    #                #HTML(m_tile),
+    #                HTML(rb_choiceNames[[1]]),
+    #                "Normal text"
+    #              ),
+    #              choiceValues = list(
+    #                "icon", "html", "text"
+    #              ))
+  })
+  observe({
+    input$submit
+    
+    isolate(
+      output$text <- renderText({
+        paste("Radiobutton response is:", input$movieChoice )
+      })
+    )
+  })
+  
+  output$txt <- renderText({
+    paste("You chose", input$rb)
+  })
   
   output$myNetId <- renderVisNetwork({
     visNetwork(nodes, edges)
