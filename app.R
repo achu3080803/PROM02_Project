@@ -1069,7 +1069,17 @@ server <- function(input, output) {
         star_rating <- movie_rating/5 * 100
         m_tile <- compose_movie_tile_html(movie_title,movie_poster,poster.height,poster.width,star_rating)
         rb_choiceNames <- append(rb_choiceNames, m_tile)
-        rb_choiceValues <- append(rb_choiceValues, movie_id)
+        if (currCategory == "Movies similar to what you like"){
+          source_id <- m_movies$source_id[i,]$value
+          rb_choiceValues <- append(rb_choiceValues, paste0(source_id,":",movie_id))
+        } else if (currCategory == "Others similar to you like these movies"){
+          u1_loginId <- m_movies$u1_loginId[i,]$value
+          u2_loginId <- m_movies$u2_loginId[i,]$value
+          rb_choiceValues <- append(rb_choiceValues, paste0(u1_loginId,":",u2_loginId,":",movie_id))
+        } else if (currCategory == "Movies with your favorite actors / actresses") {
+          source_id <- m_movies$source_id[i,]$value
+          rb_choiceValues <- append(rb_choiceValues, paste0(source_id,":",movie_id))
+        }
       }
       for (i in 1:length(rb_choiceNames)){
         rb_choiceNames[[i]]<-HTML(rb_choiceNames[[i]])
@@ -1124,11 +1134,30 @@ server <- function(input, output) {
   })
   
   output$movieGraph <- renderVisNetwork({
-    rrG <- getRecentlyRatedMovies(1,10)
-    visNetwork(rrG$nodes, rrG$relationships) %>% 
-      visNodes(font = list(color = "#ffffff")) %>% 
-      visEdges(font = list(color = "#ffffff", strokeColor = "#000000")) %>%
-      visPhysics(barnesHut = list(springConstant=0))
+
+    currCategory=get_analyze_movie_category()
+    
+    mc <- input$movieChoice
+    
+    if (!is.null(mc)) {
+      if (currCategory == "Movies similar to what you like"){
+        params<-unlist(strsplit(input$movieChoice, ":"))
+        G <- getContentBasedMovieGraph(params[1],params[2])
+      } else if (currCategory == "Others similar to you like these movies"){
+        params<-unlist(strsplit(input$movieChoice, ":"))
+        G <- getCollaborativeFilteringMovieeGraph(params[1],params[2],params[3])
+      }
+    # } else if (currCategory == "Movies with your favorite actors / actresses") {
+    #   params<-unlist(strsplit(input$movieChoice, ":"))
+    #   G <- getContentBasedMovieGraph(params[1],params[2])
+    # }
+    
+    
+      visNetwork(G$nodes, G$relationships) %>% 
+        visNodes(font = list(color = "#ffffff")) %>% 
+        visEdges(font = list(color = "#ffffff", strokeColor = "#000000")) %>%
+        visPhysics(barnesHut = list(springConstant=0))  
+    }
   })
   
   ###############################################################################################

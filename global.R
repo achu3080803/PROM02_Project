@@ -55,7 +55,8 @@ all_userid_df <- as.data.frame(all_userid_t)
 head(all_userid_df)
 head(ratings_df)
 
-G2 <-"MATCH a=(p:Person {name: 'Tom Hanks'})-[r:ACTED_IN]->(m:Movie) RETURN a;" %>% 
+#G2 <-"MATCH a=(p:Person {name: 'Tom Hanks'})-[r:ACTED_IN]->(m:Movie) RETURN a;" %>% 
+G2 <- 'MATCH a=(m:Movie {movieId: "1210"})-[:HAS_GENRE|ACTED_IN|DIRECTED|PRODUCED_BY|PRODUCED_IN]-(t)-[:HAS_GENRE|ACTED_IN|DIRECTED|PRODUCED_BY|PRODUCED_IN]-(other:Movie {movieId: "122886"}) return a' %>% 
   call_neo4j(con, type = "graph") 
 
 # We'll just unnest the properties
@@ -65,15 +66,29 @@ G2$nodes <- G2$nodes %>%
 
 # Add a new column
 G2$nodes$group <- unlist(G2$nodes$label)  
+G2$nodes$shape <- "circle" 
+G2$nodes$image <- "" 
 G2$nodes$label <- G2$nodes$title
 
+#G2$nodes[G2$nodes$group=="Movie",]$label = G2$nodes[G2$nodes$group=="Movie",]$title
+G2$nodes[G2$nodes$group=="Movie",]$shape = "image"
+G2$nodes[G2$nodes$group=="Movie",]$image = G2$nodes[G2$nodes$group=="Movie",]$poster
 G2$nodes[G2$nodes$group=="Person",]$label = G2$nodes[G2$nodes$group=="Person",]$name
+G2$nodes[G2$nodes$group=="Company",]$label = G2$nodes[G2$nodes$group=="Company",]$name
+G2$nodes[G2$nodes$group=="Genre",]$label = G2$nodes[G2$nodes$group=="Genre",]$name
+G2$nodes[G2$nodes$group=="Country",]$label = G2$nodes[G2$nodes$group=="Country",]$name
 G2$nodes$title <- G2$nodes$group
 
 # Turn the relationships :
 G2$relationships <- G2$relationships %>%
   unnest_relationships() %>%
   select(from = startNode, to = endNode, label = type)
+
+d <- paste0("a",":","b")
+params <- unlist(strsplit(d,":"))
+print(params[2])
+print(params)
+
 #head(G2$relationships)
 
 #visNetwork::visNetwork(G2$nodes, G2$relationships)
@@ -326,7 +341,7 @@ getCollaborativeFilteringMovies <- memoise(function(loginID, recLimit) {
                  " ORDER BY similarity DESC ",
                  " LIMIT 10 ",
                  " MATCH (u2)-[r:REVIEWED]->(m:Movie) WHERE NOT EXISTS( (u1)-[:REVIEWED]->(m) ) ",
-                 " RETURN m.movieId AS movie_id, m.title AS title, m.avg_rating AS avg_rating, m.poster AS poster, SUM( similarity * r.rating) AS score ",
+                 " RETURN u1.loginId AS u1_loginId, u2.loginId AS u2_loginId, m.movieId AS movie_id, m.title AS title, m.avg_rating AS avg_rating, m.poster AS poster, SUM( similarity * r.rating) AS score ",
                  " ORDER BY score DESC LIMIT ", recLimit, sep="")
   print(query)
   R <- query %>% 
@@ -366,7 +381,7 @@ getActorMovies <- memoise(function(loginID, recLimit) {
                  " MATCH (m)<-[:ACTED_IN]-(a:Person)-[:ACTED_IN]->(rec) ",
                  " WHERE NOT EXISTS( (u)-[:REVIEWED]->(rec)) ",
                  " WITH m, rec, COUNT(a) AS as ",
-                 " RETURN rec.movieId AS movie_id, rec.title AS title, rec.avg_rating AS avg_rating, rec.poster AS poster, as AS score ORDER BY score DESC LIMIT ",recLimit, sep="")
+                 " RETURN m.movieId as source_id, rec.movieId AS movie_id, rec.title AS title, rec.avg_rating AS avg_rating, rec.poster AS poster, as AS score ORDER BY score DESC LIMIT ",recLimit, sep="")
   print(query)
   R <- query %>% 
     call_neo4j(con, type = "row") 
@@ -794,3 +809,99 @@ getTop10MovieDF <- memoise(function(from_year, to_year, minRatingCnt) {
 # m<-getTop10MovieDF(2000,2001,5)
 # head(m)
 
+###############################################################################################
+# Function getContentBasedMovieGraph
+#
+# Description:  Return a neo list that contains the graph data of the movies that are similar to users' favorite movies
+#               The output returned can be used in visNetwork to display the graph
+#               Using "memoise" to automatically cache the results
+# Input:        sourceMovieId - Movie ID of the Source Movie
+#               recMovieId - Movie ID of the Recommended Movie
+# Output:       Return a neo list that contains the graph data of the movies that are similar to users' favorite movies 
+###############################################################################################
+getContentBasedMovieGraph <- memoise(function(sourceMovieId, recMovieId) {
+  
+  print("global.R - getContentBasedMovieGraph")
+
+  
+  # loginID <- 4
+  # recLimit <- 10
+  query <- paste('MATCH a=(m:Movie {movieId: "',sourceMovieId,'"})-[:HAS_GENRE|ACTED_IN|DIRECTED|PRODUCED_BY|PRODUCED_IN]-(t)-[:HAS_GENRE|ACTED_IN|DIRECTED|PRODUCED_BY|PRODUCED_IN]-(other:Movie {movieId: "',recMovieId,'"}) return a', sep="")
+  print(query)
+  G <- query %>% 
+    call_neo4j(con, type = "graph") 
+  
+  # We'll just unnest the properties
+  G$nodes <- G$nodes %>%
+    unnest_nodes(what = "properties")
+  
+  # Add a new column
+  G$nodes$group <- unlist(G$nodes$label)  
+  G$nodes$shape <- "circle" 
+  G$nodes$image <- "" 
+  G$nodes$label <- G$nodes$title
+  
+  G$nodes[G$nodes$group=="Movie",]$shape = "image"
+  G$nodes[G$nodes$group=="Movie",]$image = G$nodes[G$nodes$group=="Movie",]$poster
+  G$nodes[G$nodes$group=="Person",]$label = G$nodes[G$nodes$group=="Person",]$name
+  G$nodes[G$nodes$group=="Company",]$label = G$nodes[G$nodes$group=="Company",]$name
+  G$nodes[G$nodes$group=="Genre",]$label = G$nodes[G$nodes$group=="Genre",]$name
+  G$nodes[G$nodes$group=="Country",]$label = G$nodes[G$nodes$group=="Country",]$name
+  G$nodes$title <- G$nodes$group
+  
+  # Turn the relationships :
+  G$relationships <- G$relationships %>%
+    unnest_relationships() %>%
+    select(from = startNode, to = endNode, label = type)
+  
+  return (G)
+})
+
+###############################################################################################
+# Function getCollaborativeFilteringMovieeGraph
+#
+# Description:  Return a neo list that contains the graph data of the movies that the other users who are similar to user like
+#               The output returned can be used in visNetwork to display the graph
+#               Using "memoise" to automatically cache the results
+# Input:        u1_loginId - Login ID of the user1
+#               u2_loginId - Login ID of the user who is similar to the user1
+#               recMovieId - Movie ID of the Recommended Movie
+# Output:       Return a neo list that contains the graph data of the movies that the other users who are similar to user like
+###############################################################################################
+getCollaborativeFilteringMovieeGraph <- memoise(function(u1_loginId, u2_loginId, recMovieId) {
+  
+  print("global.R - getContentBasedMovieGraph")
+  
+  
+  # loginID <- 4
+  # recLimit <- 10
+  query <- paste('MATCH a=(u1:Person {loginId: ',u1_loginId,'})-[x:REVIEWED]->(movie:Movie)<-[y:REVIEWED]-(u2:Person {loginId: ',u2_loginId,'})-[z:REVIEWED]->(rec:Movie {movieId: "',recMovieId,'"}) return a', sep="")
+  print(query)
+  G <- query %>% 
+    call_neo4j(con, type = "graph") 
+  
+  # We'll just unnest the properties
+  G$nodes <- G$nodes %>%
+    unnest_nodes(what = "properties")
+  
+  # Add a new column
+  G$nodes$group <- unlist(G$nodes$label)  
+  G$nodes$shape <- "circle" 
+  G$nodes$image <- "" 
+  G$nodes$label <- G$nodes$title
+  
+  G$nodes[G$nodes$group=="Movie",]$shape = "image"
+  G$nodes[G$nodes$group=="Movie",]$image = G$nodes[G$nodes$group=="Movie",]$poster
+  G$nodes[G$nodes$group=="Person",]$label = G$nodes[G$nodes$group=="Person",]$name
+  G$nodes[G$nodes$group=="Company",]$label = G$nodes[G$nodes$group=="Company",]$name
+  G$nodes[G$nodes$group=="Genre",]$label = G$nodes[G$nodes$group=="Genre",]$name
+  G$nodes[G$nodes$group=="Country",]$label = G$nodes[G$nodes$group=="Country",]$name
+  G$nodes$title <- G$nodes$group
+  
+  # Turn the relationships :
+  G$relationships <- G$relationships %>%
+    unnest_relationships() %>%
+    select(from = startNode, to = endNode, label = type)
+  
+  return (G)
+})
