@@ -288,15 +288,15 @@ getContentBasedMovies <- memoise(function(loginID, recLimit) {
   
   # loginID <- 4
   # recLimit <- 10
-  query <- paste("MATCH (u:Person {loginId: ",loginID,"})-[r:REVIEWED]->(m:Movie) ",
+  query <- paste(" MATCH (u:Person {loginId: ",loginID,"})-[r:REVIEWED]->(m:Movie) ",
                  " WITH m, r, u ",
                  " ORDER BY r.rating DESC LIMIT 5 ",
-                 " MATCH (m)-[:HAS_GENRE|ACTED_IN|DIRECTED|PRODUCED_BY|PRODUCED_IN]-(t)-[:HAS_GENRE|ACTED_IN|DIRECTED|PRODUCED_BY|PRODUCED_IN]-(other:Movie) ",
+                 " MATCH (m)-[:HAS_GENRE|:ACTED_IN|:DIRECTED|:PRODUCED_BY|:PRODUCED_IN]-(t)-[:HAS_GENRE|:ACTED_IN|:DIRECTED|:PRODUCED_BY|:PRODUCED_IN]-(other:Movie) ",
                  " WHERE NOT EXISTS( (u)-[:REVIEWED]->(other) ) ",
                  " WITH m, other, COUNT(t) AS intersection, COLLECT(t.name) AS i ",
-                 " MATCH (m)-[:HAS_GENRE|:ACTED_IN|:DIRECTED|PRODUCED_BY|PRODUCED_IN]-(mt) ",
+                 " MATCH (m)-[:HAS_GENRE|:ACTED_IN|:DIRECTED|:PRODUCED_BY|:PRODUCED_IN]-(mt) ",
                  " WITH m,other, intersection,i, COLLECT(mt.name) AS s1 ",
-                 " MATCH (other)-[:HAS_GENRE|:ACTED_IN|:DIRECTED|PRODUCED_BY|PRODUCED_IN]-(ot) ",
+                 " MATCH (other)-[:HAS_GENRE|:ACTED_IN|:DIRECTED|:PRODUCED_BY|:PRODUCED_IN]-(ot) ",
                  " WITH m,other,intersection,i, s1, COLLECT(ot.name) AS s2 ",
                  " WITH m,other,intersection,s1,s2 ",
                  " WITH m,other,intersection,s1+[x IN s2 WHERE NOT x IN s1] AS union, apoc.text.join(s1, '|') AS s1_txt, apoc.text.join(s2, '|') AS s2_txt ",
@@ -837,7 +837,7 @@ getContentBasedMovieGraph <- memoise(function(sourceMovieId, recMovieId) {
   
   # Add a new column
   G$nodes$group <- unlist(G$nodes$label)  
-  G$nodes$shape <- "circle" 
+  G$nodes$shape <- "dot" 
   G$nodes$image <- "" 
   G$nodes$label <- G$nodes$title
   
@@ -848,6 +848,7 @@ getContentBasedMovieGraph <- memoise(function(sourceMovieId, recMovieId) {
   G$nodes[G$nodes$group=="Genre",]$label = G$nodes[G$nodes$group=="Genre",]$name
   G$nodes[G$nodes$group=="Country",]$label = G$nodes[G$nodes$group=="Country",]$name
   G$nodes$title <- G$nodes$group
+  G$nodes$title <- paste('<p style="color:Black;font-size:14px">',G$nodes$group,'</p>')
   
   # Turn the relationships :
   G$relationships <- G$relationships %>%
@@ -886,7 +887,7 @@ getCollaborativeFilteringMovieeGraph <- memoise(function(u1_loginId, u2_loginId,
   
   # Add a new column
   G$nodes$group <- unlist(G$nodes$label)  
-  G$nodes$shape <- "circle" 
+  G$nodes$shape <- "dot" 
   G$nodes$image <- "" 
   G$nodes$label <- G$nodes$title
   
@@ -897,6 +898,58 @@ getCollaborativeFilteringMovieeGraph <- memoise(function(u1_loginId, u2_loginId,
   G$nodes[G$nodes$group=="Genre",]$label = G$nodes[G$nodes$group=="Genre",]$name
   G$nodes[G$nodes$group=="Country",]$label = G$nodes[G$nodes$group=="Country",]$name
   G$nodes$title <- G$nodes$group
+  G$nodes$title <- paste('<p style="color:Black;font-size:14px">',G$nodes$group,'</p>')
+  
+  # Turn the relationships :
+  G$relationships <- G$relationships %>%
+    unnest_relationships() %>%
+    select(from = startNode, to = endNode, label = rating)
+  G$relationships$label <- paste("Rating: ",G$relationships$label)
+
+  return (G)
+})
+
+#k<-getCollaborativeFilteringMovieeGraph(1,210,122886)
+
+###############################################################################################
+# Function getActorMovieGraph
+#
+# Description:  Return a neo list that contains the graph data of the movies that are acted by the same actors of user's favorite movies
+#               The output returned can be used in visNetwork to display the graph
+#               Using "memoise" to automatically cache the results
+# Input:        sourceMovieId - Movie ID of the Source Movie
+#               recMovieId - Movie ID of the Recommended Movie
+# Output:       Return a neo list that contains the graph data of the movies that are acted by the same actors of user's favorite movies 
+###############################################################################################
+getActorMovieGraph <- memoise(function(sourceMovieId, recMovieId) {
+  
+  print("global.R - getActorMovieGraph")
+  
+  
+  # loginID <- 4
+  # recLimit <- 10
+  query <- paste('MATCH a=(m:Movie {movieId: "',sourceMovieId,'"})-[:ACTED_IN]-(t)-[:ACTED_IN]-(other:Movie {movieId: "',recMovieId,'"}) return a', sep="")
+  print(query)
+  G <- query %>% 
+    call_neo4j(con, type = "graph") 
+  
+  # We'll just unnest the properties
+  G$nodes <- G$nodes %>%
+    unnest_nodes(what = "properties")
+  
+  # Add a new column
+  G$nodes$group <- unlist(G$nodes$label)  
+  G$nodes$shape <- "dot" 
+  G$nodes$image <- "" 
+  G$nodes$label <- G$nodes$title
+  
+  G$nodes[G$nodes$group=="Movie",]$shape = "image"
+  G$nodes[G$nodes$group=="Movie",]$image = G$nodes[G$nodes$group=="Movie",]$poster
+  G$nodes[G$nodes$group=="Person",]$label = G$nodes[G$nodes$group=="Person",]$name
+  G$nodes[G$nodes$group=="Company",]$label = G$nodes[G$nodes$group=="Company",]$name
+  G$nodes[G$nodes$group=="Genre",]$label = G$nodes[G$nodes$group=="Genre",]$name
+  G$nodes[G$nodes$group=="Country",]$label = G$nodes[G$nodes$group=="Country",]$name
+  G$nodes$title <- paste('<p style="color:Black;font-size:14px">',G$nodes$group,'</p>')
   
   # Turn the relationships :
   G$relationships <- G$relationships %>%

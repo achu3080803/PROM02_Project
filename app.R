@@ -51,14 +51,14 @@ ui <- dashboardPage(
                 #selectizeInput("selectUser", "Login as", unique(ratings_df$userId))
                 selectizeInput("selectUser", "Login as", all_userid_df$value)
               ),
-              # fluidRow(
-              #   h1("Recently rated by you"),
-              #   htmlOutput("watchedMovies")
-              # ),
               fluidRow(
-                h1("Your favorite movies"),
-                htmlOutput("favoriteMovies")
+                h1("Recently rated by you"),
+                htmlOutput("watchedMovies")
               ),
+              # fluidRow(
+              #   h1("Your favorite movies"),
+              #   htmlOutput("favoriteMovies")
+              # ),
               fluidRow(
                 h1("Movies similar to what you like"),
                 htmlOutput("cbMovies")
@@ -166,19 +166,23 @@ ui <- dashboardPage(
           selectizeInput("selectCategory", "Category", c("Movies similar to what you like","Others similar to you like these movies","Movies with your favorite actors / actresses"))
         ),
         fluidRow(
+          h1("User's favorite movies"),
+          htmlOutput("favoriteMovies")
+        ),
+        fluidRow(
           htmlOutput("selectedMovieCategory"),
-          x <- uiOutput('radioTest'),
-          actionButton('submit', label = "Submit"),
-          br(),
+          x <- uiOutput('radioMovieTiles'),
+          #actionButton('submit', label = "Submit"),
+          #br(),
           #print(paste("Radiobutton response is:", "reply")),
-          textOutput('text')
+          #textOutput('text')
         ),
          # visNetworkOutput("myNetId",
          #                  height <- "1200",
          #                  width <- "600"),
          visNetworkOutput("movieGraph",
-                         height <- "1200",
-                         width <- "1200")
+                         height <- "2000",
+                         width <- "1000")
         #)
       )
     )
@@ -225,38 +229,6 @@ server <- function(input, output) {
   # Input:        
   # Output:       Return the movie posters of the movies that are rated by the user
   ###############################################################################################
-  # output$watchedMovies<-renderText({
-  #   #print("Hello")
-  #   currUser=get_curr_login()
-  #   m_posters=NULL
-  #   m <- get_watched_movies(currUser)
-  #   print(currUser)
-  #   print(m)
-  #   m_posters <- append(m_posters, '<div>')
-  #   for (i in 1:length(m)){
-  #     movie_title <- get_movie_title(m[i],FALSE)
-  #     movie_rating <- get_movie_rating(m[i])
-  #     star_rating <- movie_rating/5 * 100
-  #     m_posters <- append(m_posters, '<div class="gallery">')
-  #     m_posters <- append(m_posters, paste0('<img src="',get_movie_url(m[i]),'" alt="',movie_title,'" height="',poster.height,'" width="',poster.width,'" ContentType="Images/jpeg" >'))
-  #     m_posters <- append(m_posters, '<div class="ratings">')
-  #     m_posters <- append(m_posters, '<div class="empty-stars"></div>')
-  #     m_posters <- append(m_posters, paste0('<div class="full-stars", style="width:',star_rating,'%"></div>'))
-  #     m_posters <- append(m_posters, '</div>')
-  #     m_posters <- append(m_posters, paste0('<div class="desc" >',movie_title,'</div>'))
-  #     m_posters <- append(m_posters, '</div>')
-  #   }
-  #   m_posters <- append(m_posters, '</div>')
-  #   print(m_posters)
-  # })
-  
-  ###############################################################################################
-  # Function output$watchedMovies
-  #
-  # Description:  Return the movie posters of the movies that are rated by the user
-  # Input:        
-  # Output:       Return the movie posters of the movies that are rated by the user
-  ###############################################################################################
   output$watchedMovies<-renderText({
     print("watchedMovies")
     currUser=get_curr_login()
@@ -295,7 +267,7 @@ server <- function(input, output) {
   ###############################################################################################
   output$favoriteMovies<-renderText({
     print("favoriteMovies")
-    currUser=get_curr_login()
+    currUser=get_analyze_user()
     m_posters=NULL
     m_graph <- getFavoriteMovies(currUser,10)
     m_movies <- m_graph$nodes[m_graph$nodes[]$node_type=="Movie",]
@@ -321,38 +293,6 @@ server <- function(input, output) {
     m_posters <- append(m_posters, '</div>')
     print(m_posters)
   })
-  
-  ###############################################################################################
-  # Function output$cbMovies
-  #
-  # Description:  Return the movie posters of the movies that are recommended by the Content-based Recommender
-  # Input:        
-  # Output:       Return the movie posters of the movies that are recommended by the Content-based Recommender
-  ###############################################################################################
-  # output$cbMovies<-renderText({
-  #   #print("Hello")
-  #   currUser=get_curr_login()
-  #   m_posters=NULL
-  #   m <- get_cb_movies(currUser)
-  #   #print(currUser)
-  #   #print(m)
-  #   m_posters <- append(m_posters, '<div>')
-  #   for (i in 1:length(m)){
-  #     movie_title <- get_movie_title(m[i],FALSE)
-  #     movie_rating <- get_movie_avg_rating(m[i])
-  #     star_rating <- movie_rating/5 * 100
-  #     m_posters <- append(m_posters, '<div class="gallery">')
-  #     m_posters <- append(m_posters, paste0('<img src="',get_movie_url(m[i]),'" alt="',movie_title,'" height="',poster.height,'" width="',poster.width,'" ContentType="Images/jpeg" >'))
-  #     m_posters <- append(m_posters, 'Avg. <div class="ratings">')
-  #     m_posters <- append(m_posters, '<div class="empty-stars"></div>')
-  #     m_posters <- append(m_posters, paste0('<div class="full-stars", style="width:',star_rating,'%"></div>'))
-  #     m_posters <- append(m_posters, '</div>')
-  #     m_posters <- append(m_posters, paste0('<div class="desc" >',movie_title,'</div>'))
-  #     m_posters <- append(m_posters, '</div>')
-  #   }
-  #   m_posters <- append(m_posters, '</div>')
-  #   print(m_posters)
-  # })
   
   ###############################################################################################
   # Function output$cbMovies
@@ -391,38 +331,6 @@ server <- function(input, output) {
   ###############################################################################################
   # Function output$cfPopularMovies
   #
-  # Description:  Return the movie posters of the movies that are recommended by the Popular Recommender
-  # Input:        
-  # Output:       Return the movie posters of the movies that are recommended by the Popular Recommender
-  ###############################################################################################
-  # output$cfPopularMovies<-renderText({
-  #   #print("Hello")
-  #   currUser=get_curr_login()
-  #   m_posters=NULL
-  #   m <- get_cf_popular_movies(currUser)
-  #   print(currUser)
-  #   print(m)
-  #   m_posters <- append(m_posters, '<div>')
-  #   for (i in 1:length(m)){
-  #     movie_title <- get_movie_title(m[i],FALSE)
-  #     movie_rating <- get_movie_avg_rating(m[i])
-  #     star_rating <- movie_rating/5 * 100
-  #     m_posters <- append(m_posters, '<div class="gallery">')
-  #     m_posters <- append(m_posters, paste0('<img src="',get_movie_url(m[i]),'" alt="',movie_title,'" height="',poster.height,'" width="',poster.width,'" ContentType="Images/jpeg" >'))
-  #     m_posters <- append(m_posters, 'Avg. <div class="ratings">')
-  #     m_posters <- append(m_posters, '<div class="empty-stars"></div>')
-  #     m_posters <- append(m_posters, paste0('<div class="full-stars", style="width:',star_rating,'%"></div>'))
-  #     m_posters <- append(m_posters, '</div>')
-  #     m_posters <- append(m_posters, paste0('<div class="desc" >',movie_title,'</div>'))
-  #     m_posters <- append(m_posters, '</div>')
-  #   }
-  #   m_posters <- append(m_posters, '</div>')
-  #   print(m_posters)
-  # })
-  
-  ###############################################################################################
-  # Function output$cfPopularMovies
-  #
   # Description:  Return the movie posters of the movies that are recommended by the Content-based Recommender
   # Input:        
   # Output:       Return the movie posters of the movies that are recommended by the Content-based Recommender
@@ -453,38 +361,6 @@ server <- function(input, output) {
     m_posters <- append(m_posters, '</div>')
     print(m_posters)
   })
-  
-  ###############################################################################################
-  # Function output$cbActorMovies
-  #
-  # Description:  Return the movie posters of the movies that are recommended by the users' favorite actors / actresses
-  # Input:        
-  # Output:       Return the movie posters of the movies that are recommended by the users' favorite actors / actresses
-  ###############################################################################################
-  # output$cbActorMovies<-renderText({
-  #   #print("Hello")
-  #   currUser=get_curr_login()
-  #   m_posters=NULL
-  #   m <- get_cf_als_imp_movies(currUser)
-  #   print(currUser)
-  #   print(m)
-  #   m_posters <- append(m_posters, '<div>')
-  #   for (i in 1:length(m)){
-  #     movie_title <- get_movie_title(m[i],FALSE)
-  #     movie_rating <- get_movie_avg_rating(m[i])
-  #     star_rating <- movie_rating/5 * 100
-  #     m_posters <- append(m_posters, '<div class="gallery">')
-  #     m_posters <- append(m_posters, paste0('<img src="',get_movie_url(m[i]),'" alt="',movie_title,'" height="',poster.height,'" width="',poster.width,'" ContentType="Images/jpeg" >'))
-  #     m_posters <- append(m_posters, 'Avg. <div class="ratings">')
-  #     m_posters <- append(m_posters, '<div class="empty-stars"></div>')
-  #     m_posters <- append(m_posters, paste0('<div class="full-stars", style="width:',star_rating,'%"></div>'))
-  #     m_posters <- append(m_posters, '</div>')
-  #     m_posters <- append(m_posters, paste0('<div class="desc" >',movie_title,'</div>'))
-  #     m_posters <- append(m_posters, '</div>')
-  #   }
-  #   m_posters <- append(m_posters, '</div>')
-  #   print(m_posters)
-  # })
   
   ###############################################################################################
   # Function output$cbActorMovies
@@ -668,48 +544,6 @@ server <- function(input, output) {
     # ...but not for anything else
     getTop10MovieDF(input$ratedYear[1],input$ratedYear[2], input$minRatingCnt[1])
   })
-
-  ###############################################################################################
-  # Function output$top10Movie
-  #
-  # Description:  Render function to return the HTML for composing top 10 movies result
-  # Input:        
-  # Output:       HTML for composing top 10 movies result
-  ###############################################################################################
-  # output$top10Movies<-renderText({
-  #   #print("Hello")
-  #   m_posters=NULL
-  #   m_df <- getTop10Movie()
-  #   m <- m_df$movieId
-  #   print(m)
-  #   print("Top 10 Movies")
-  #   movie_title <- ""
-  #   movie_rating <- 0
-  #   m_posters <- append(m_posters, (paste0("<h1>Top 10 Movies (",input$ratedYear[1],"-",input$ratedYear[2],")</h1>")))
-  #   if (length(m)>0) {
-  #     m_posters <- append(m_posters, '<div>')
-  #     for (i in 1:length(m)){
-  #       movie_title <- get_movie_title(m[i],FALSE)
-  #       movie_rating <- m_df[i,]$avgRating
-  #       
-  #       star_rating <- movie_rating/5 * 100
-  #       m_posters <- append(m_posters, '<div class="gallery">')
-  #       m_posters <- append(m_posters, paste0('<img src="',get_movie_url(m[i]),'" alt="',movie_title,'" height="',poster.height,'" width="',poster.width,'" ContentType="Images/jpeg" >'))
-  #       m_posters <- append(m_posters, '<div class="ratings">')
-  #       m_posters <- append(m_posters, '<div class="empty-stars"></div>')
-  #       m_posters <- append(m_posters, paste0('<div class="full-stars", style="width:',star_rating,'%"></div>'))
-  #       m_posters <- append(m_posters, '</div>')
-  #       m_posters <- append(m_posters, paste0('<div class="desc" >',movie_title,'</div>'))
-  #       m_posters <- append(m_posters, '</div>')
-  #     }
-  #     m_posters <- append(m_posters, '</div>')
-  #   }
-  #   else{
-  #     m_posters <- append(m_posters, '<div><H1 style="text-align:center">No Movies Found</H1></div>')
-  #   }
-  #   #print(m_posters)
-  #   return(m_posters)
-  # })
   
   ###############################################################################################
   # Function output$top10Movie
@@ -1022,27 +856,13 @@ server <- function(input, output) {
 
     if (length(m_movies)>0) {
       m_posters <- append(m_posters, (paste0("<h1>",currCategory,"</h1>")))
-    # 
-    #   m_posters <- append(m_posters, '<div>')
-    #   for (i in 1:nrow(m_movies$title)){
-    #     movie_title <- m_movies$title[i,]$value
-    #     movie_poster <- m_movies$poster[i,]$value
-    #     movie_rating <- m_movies$avg_rating[i,]$value
-    #     star_rating <- movie_rating/5 * 100
-    #     m_tile <- compose_movie_tile_html(movie_title,movie_poster,poster.height,poster.width,star_rating)
-    #     m_posters <- append(m_posters, m_tile)
-    #   }
-    #   m_posters <- append(m_posters, '</div>')
-    # }
-    # else {
-    #   m_posters <- append(m_posters, (paste0("<h1>No movies to analyze</h1>")))
     }
 
     print(m_posters)
   })
   
-  output$radioTest <- renderUI({
-    print("radioTest")
+  output$radioMovieTiles <- renderUI({
+    print("radioMovieTiles")
     currUser=get_analyze_user()
     currCategory=get_analyze_movie_category()
     m_posters=NULL
@@ -1093,27 +913,9 @@ server <- function(input, output) {
       rb_choiceNames <- c("No Movies")
     }
     
-    # test_rb <- HTML("abc")
-    # test_rb <- list(HTML("abc"), HTML("def"))
-    # 
-    # test_rb1 <- list(HTML("abc"))
-    # test_rb1 <- append(test_rb1, HTML("def"))
-    # test_rb1[[2]]<-HTML(test_rb1[[2]])
-    
     # The options are dynamically generated on the server
     radioButtons('movieChoice', currCategory, choiceNames=rb_choiceNames, choiceValues=rb_choiceValues, inline=TRUE)
-    
-    # radioButtons("rb", "Choose one:",
-    #              choiceNames = list(
-    #                icon("calendar"),
-    #                #HTML("<p style='color:red;'>Red Text</p>"),
-    #                #HTML(m_tile),
-    #                HTML(rb_choiceNames[[1]]),
-    #                "Normal text"
-    #              ),
-    #              choiceValues = list(
-    #                "icon", "html", "text"
-    #              ))
+
   })
   observe({
     input$submit
@@ -1146,17 +948,17 @@ server <- function(input, output) {
       } else if (currCategory == "Others similar to you like these movies"){
         params<-unlist(strsplit(input$movieChoice, ":"))
         G <- getCollaborativeFilteringMovieeGraph(params[1],params[2],params[3])
+      } else if (currCategory == "Movies with your favorite actors / actresses") {
+        params<-unlist(strsplit(input$movieChoice, ":"))
+        G <- getActorMovieGraph(params[1],params[2])
       }
-    # } else if (currCategory == "Movies with your favorite actors / actresses") {
-    #   params<-unlist(strsplit(input$movieChoice, ":"))
-    #   G <- getContentBasedMovieGraph(params[1],params[2])
-    # }
     
     
       visNetwork(G$nodes, G$relationships) %>% 
         visNodes(font = list(color = "#ffffff")) %>% 
         visEdges(font = list(color = "#ffffff", strokeColor = "#000000")) %>%
-        visPhysics(barnesHut = list(springConstant=0))  
+        visPhysics(barnesHut = list(springConstant=0)) %>%
+        addFontAwesome()
     }
   })
   
