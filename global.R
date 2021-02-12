@@ -30,15 +30,6 @@ links_df<-read.csv("ml-latest-small/links.csv", encoding="UTF8")
 nodes <- data.frame(id = 1:20, label = 1:20)
 edges <- data.frame(from = c(1:20), to = c(2:20,1))
 
-testimg <- paste0(
-"<div class=\"gallery\">",                                                                                                                                                                                                                         
-"<img src=\"https://m.media-amazon.com/images/M/MV5BOTM2NTI3NTc3Nl5BMl5BanBnXkFtZTgwNzM1OTQyNTM@._V1_SX300.jpg\" alt=\"Solo: A Star Wars Story\" height=\"200\" width=\"150\" ContentType=\"Images/jpeg\" >",                                      
-"<div class=\"ratings\">",                                                                                                                                                                                                                         
-"<div class=\"empty-stars\"></div>",                                                                                                                                                                                                               
-"<div class=\"full-stars\", style=\"width:78%\"></div>",                                                                                                                                                                                           
-"</div>",                                                                                                                                                                                                                                          
-"<div class=\"desc\" >Solo: A Star Wars Story</div>",                                                                                                                                                                                              
-"</div>") 
 
 # Connect to neo4j
 con <- neo4j_api$new(
@@ -68,21 +59,60 @@ G2$nodes <- G2$nodes %>%
 G2$nodes$group <- unlist(G2$nodes$label)  
 G2$nodes$shape <- "circle" 
 G2$nodes$image <- "" 
+G2$nodes$icon <- vector(mode = "list", length = 10)
 G2$nodes$label <- G2$nodes$title
+
+typeof(G2$nodes[1,]$shape)
 
 #G2$nodes[G2$nodes$group=="Movie",]$label = G2$nodes[G2$nodes$group=="Movie",]$title
 G2$nodes[G2$nodes$group=="Movie",]$shape = "image"
 G2$nodes[G2$nodes$group=="Movie",]$image = G2$nodes[G2$nodes$group=="Movie",]$poster
+G2$nodes[G2$nodes$group=="Person",]$shape =""
 G2$nodes[G2$nodes$group=="Person",]$label = G2$nodes[G2$nodes$group=="Person",]$name
 G2$nodes[G2$nodes$group=="Company",]$label = G2$nodes[G2$nodes$group=="Company",]$name
 G2$nodes[G2$nodes$group=="Genre",]$label = G2$nodes[G2$nodes$group=="Genre",]$name
 G2$nodes[G2$nodes$group=="Country",]$label = G2$nodes[G2$nodes$group=="Country",]$name
 G2$nodes$title <- G2$nodes$group
 
+test<-list(list(code = "f007", color = "red"),list(code = "f007", color = "red"),list(code = "f007", color = "red"))
+l<-length(G2$nodes[G2$nodes$group=="Person",]$icon)
+
+test1<-G2$nodes[G2$nodes$group=="Person",]$icon
+iconList <- vector(mode = "list", length = l)
+iconList<-list(code = "f007", color = "red")
+df<-data.frame(iconList)
+df <- rbind(df, list(code = "f007", color = "red"))
+rbind(df, list(code = "f007", color = "red"))
+
+typeof(df[1,])
+typeof(G2$nodes[G2$nodes$group=="Person",]$icon)
+typeof(G2$nodes[G2$nodes$group=="Person",])
+print(df[1,])
+G2$nodes[G2$nodes$group=="Person",]$icon = list(list(code = "f007", color = "red"))
+print(G2$nodes[G2$nodes$group=="Person",]$icon[1])
+
 # Turn the relationships :
 G2$relationships <- G2$relationships %>%
   unnest_relationships() %>%
   select(from = startNode, to = endNode, label = type)
+
+typeof(G2$nodes)
+
+G2nodesdf <- data.frame(G2$nodes)
+visNetwork(G2$nodes, G2$relationships) %>% 
+  visNodes(font = list(color = "#ffffff")) %>% 
+  visGroups(groupname="Person",shape = "icon", icon = list(code = "f007", color = "red")) %>%
+  visGroups(groupname="Movie",shape = "image") %>%
+  visGroups(groupname="Company",shape = "dot") %>%
+  visGroups(groupname="Genre",shape = "dot") %>%
+  visGroups(groupname="Country",shape = "dot") %>%
+  visEdges(font = list(color = "#ffffff", strokeColor = "#000000")) %>%
+  visPhysics(barnesHut = list(springConstant=0)) %>%
+  addFontAwesome()
+
+visNetwork(G2$nodes, G2$relationships) %>% 
+  visGroups(groupname="Person",shape = "icon", icon = list(code = "f007", color = "red")) %>%
+  addFontAwesome()
 
 d <- paste0("a",":","b")
 params <- unlist(strsplit(d,":"))
@@ -837,18 +867,22 @@ getContentBasedMovieGraph <- memoise(function(sourceMovieId, recMovieId) {
   
   # Add a new column
   G$nodes$group <- unlist(G$nodes$label)  
-  G$nodes$shape <- "dot" 
-  G$nodes$image <- "" 
-  G$nodes$label <- G$nodes$title
-  
-  G$nodes[G$nodes$group=="Movie",]$shape = "image"
-  G$nodes[G$nodes$group=="Movie",]$image = G$nodes[G$nodes$group=="Movie",]$poster
-  G$nodes[G$nodes$group=="Person",]$label = G$nodes[G$nodes$group=="Person",]$name
-  G$nodes[G$nodes$group=="Company",]$label = G$nodes[G$nodes$group=="Company",]$name
-  G$nodes[G$nodes$group=="Genre",]$label = G$nodes[G$nodes$group=="Genre",]$name
-  G$nodes[G$nodes$group=="Country",]$label = G$nodes[G$nodes$group=="Country",]$name
-  G$nodes$title <- G$nodes$group
-  G$nodes$title <- paste('<p style="color:Black;font-size:14px">',G$nodes$group,'</p>')
+  #G$nodes$shape <- "dot" 
+  # G$nodes$image <- "" 
+  # G$nodes$label <- G$nodes$title
+  # 
+  # #G$nodes[G$nodes$group=="Movie",]$shape = "image"
+  # G$nodes[G$nodes$group=="Movie",]$image = G$nodes[G$nodes$group=="Movie",]$poster
+  # G$nodes[G$nodes$group=="Person",]$image = "user_icon_red.png"
+  # G$nodes[G$nodes$group=="Person",]$label = G$nodes[G$nodes$group=="Person",]$name
+  # G$nodes[G$nodes$group=="Company",]$image = "film_company_icon_green.png"
+  # G$nodes[G$nodes$group=="Company",]$label = G$nodes[G$nodes$group=="Company",]$name
+  # G$nodes[G$nodes$group=="Genre",]$image = "genre_icon_pink.png"
+  # G$nodes[G$nodes$group=="Genre",]$label = G$nodes[G$nodes$group=="Genre",]$name
+  # G$nodes[G$nodes$group=="Country",]$image = "country_icon_blue.png"  
+  # G$nodes[G$nodes$group=="Country",]$label = G$nodes[G$nodes$group=="Country",]$name
+  # G$nodes$title <- G$nodes$group
+  # G$nodes$title <- paste('<p style="color:Black;font-size:14px">',G$nodes$group,'</p>')
   
   # Turn the relationships :
   G$relationships <- G$relationships %>%
@@ -887,18 +921,19 @@ getCollaborativeFilteringMovieeGraph <- memoise(function(u1_loginId, u2_loginId,
   
   # Add a new column
   G$nodes$group <- unlist(G$nodes$label)  
-  G$nodes$shape <- "dot" 
-  G$nodes$image <- "" 
-  G$nodes$label <- G$nodes$title
-  
-  G$nodes[G$nodes$group=="Movie",]$shape = "image"
-  G$nodes[G$nodes$group=="Movie",]$image = G$nodes[G$nodes$group=="Movie",]$poster
-  G$nodes[G$nodes$group=="Person",]$label = G$nodes[G$nodes$group=="Person",]$name
-  G$nodes[G$nodes$group=="Company",]$label = G$nodes[G$nodes$group=="Company",]$name
-  G$nodes[G$nodes$group=="Genre",]$label = G$nodes[G$nodes$group=="Genre",]$name
-  G$nodes[G$nodes$group=="Country",]$label = G$nodes[G$nodes$group=="Country",]$name
-  G$nodes$title <- G$nodes$group
-  G$nodes$title <- paste('<p style="color:Black;font-size:14px">',G$nodes$group,'</p>')
+  #G$nodes$shape <- "dot" 
+  # G$nodes$image <- "" 
+  # G$nodes$label <- G$nodes$title
+  # 
+  # #G$nodes[G$nodes$group=="Movie",]$shape = "image"
+  # G$nodes[G$nodes$group=="Movie",]$image = G$nodes[G$nodes$group=="Movie",]$poster
+  # G$nodes[G$nodes$group=="Person",]$image = "www/user_icon_red.png"
+  # G$nodes[G$nodes$group=="Person",]$label = G$nodes[G$nodes$group=="Person",]$name
+  # G$nodes[G$nodes$group=="Company",]$label = G$nodes[G$nodes$group=="Company",]$name
+  # G$nodes[G$nodes$group=="Genre",]$label = G$nodes[G$nodes$group=="Genre",]$name
+  # G$nodes[G$nodes$group=="Country",]$label = G$nodes[G$nodes$group=="Country",]$name
+  # G$nodes$title <- G$nodes$group
+  # G$nodes$title <- paste('<p style="color:Black;font-size:14px">',G$nodes$group,'</p>')
   
   # Turn the relationships :
   G$relationships <- G$relationships %>%
@@ -939,17 +974,17 @@ getActorMovieGraph <- memoise(function(sourceMovieId, recMovieId) {
   
   # Add a new column
   G$nodes$group <- unlist(G$nodes$label)  
-  G$nodes$shape <- "dot" 
-  G$nodes$image <- "" 
-  G$nodes$label <- G$nodes$title
-  
-  G$nodes[G$nodes$group=="Movie",]$shape = "image"
-  G$nodes[G$nodes$group=="Movie",]$image = G$nodes[G$nodes$group=="Movie",]$poster
-  G$nodes[G$nodes$group=="Person",]$label = G$nodes[G$nodes$group=="Person",]$name
-  G$nodes[G$nodes$group=="Company",]$label = G$nodes[G$nodes$group=="Company",]$name
-  G$nodes[G$nodes$group=="Genre",]$label = G$nodes[G$nodes$group=="Genre",]$name
-  G$nodes[G$nodes$group=="Country",]$label = G$nodes[G$nodes$group=="Country",]$name
-  G$nodes$title <- paste('<p style="color:Black;font-size:14px">',G$nodes$group,'</p>')
+  #G$nodes$shape <- "dot" 
+  # G$nodes$image <- "" 
+  # G$nodes$label <- G$nodes$title
+  # 
+  # #G$nodes[G$nodes$group=="Movie",]$shape = "image"
+  # G$nodes[G$nodes$group=="Movie",]$image = G$nodes[G$nodes$group=="Movie",]$poster
+  # G$nodes[G$nodes$group=="Person",]$label = G$nodes[G$nodes$group=="Person",]$name
+  # G$nodes[G$nodes$group=="Company",]$label = G$nodes[G$nodes$group=="Company",]$name
+  # G$nodes[G$nodes$group=="Genre",]$label = G$nodes[G$nodes$group=="Genre",]$name
+  # G$nodes[G$nodes$group=="Country",]$label = G$nodes[G$nodes$group=="Country",]$name
+  # G$nodes$title <- paste('<p style="color:Black;font-size:14px">',G$nodes$group,'</p>')
   
   # Turn the relationships :
   G$relationships <- G$relationships %>%

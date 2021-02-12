@@ -954,11 +954,47 @@ server <- function(input, output) {
       }
     
     
+      # visNetwork(G$nodes, G$relationships) %>% 
+      #   visNodes(font = list(color = "#ffffff")) %>% 
+      #   visEdges(font = list(color = "#ffffff", strokeColor = "#000000")) %>%
+      #   visPhysics(barnesHut = list(springConstant=0)) %>%
+      #   addFontAwesome()
+      
+      G$nodes$image <- "" 
+      G$nodes$label <- G$nodes$title
+      
+      #G$nodes[G$nodes$group=="Movie",]$shape = "image"
+      G$nodes[G$nodes$group=="Movie",]$image = G$nodes[G$nodes$group=="Movie",]$poster
+      G$nodes[G$nodes$group=="Person",]$image = "user_icon_red.png"
+      G$nodes[G$nodes$group=="Person",]$label = G$nodes[G$nodes$group=="Person",]$name
+      G$nodes[G$nodes$group=="Company",]$image = "film_company_icon_green.png"
+      G$nodes[G$nodes$group=="Company",]$label = G$nodes[G$nodes$group=="Company",]$name
+      G$nodes[G$nodes$group=="Genre",]$image = "genre_icon_pink.png"
+      G$nodes[G$nodes$group=="Genre",]$label = G$nodes[G$nodes$group=="Genre",]$name
+      G$nodes[G$nodes$group=="Country",]$image = "country_icon_blue.png"  
+      G$nodes[G$nodes$group=="Country",]$label = G$nodes[G$nodes$group=="Country",]$name
+      G$nodes$title <- G$nodes$group
+      G$nodes$title <- paste('<p style="color:Black;font-size:14px">',G$nodes$group,'</p>')
+      
       visNetwork(G$nodes, G$relationships) %>% 
         visNodes(font = list(color = "#ffffff")) %>% 
+        visGroups(groupname="Person",shape = "image") %>%
+        visGroups(groupname="Movie",shape = "image") %>%
+        visGroups(groupname="Company",shape = "image") %>%
+        visGroups(groupname="Genre",shape = "image") %>%
+        visGroups(groupname="Country",shape = "image") %>%
         visEdges(font = list(color = "#ffffff", strokeColor = "#000000")) %>%
         visPhysics(barnesHut = list(springConstant=0)) %>%
         addFontAwesome()
+      
+      # nodes <- data.frame(id = 1:3, group = c("Person", "A", "Person"), shape=c("","",""))
+      # edges <- data.frame(from = c(1,2), to = c(2,3))
+      # 
+      # visNetwork(nodes, edges, width = "100%") %>%
+      #   visGroups(groupname = "A", shape = "icon", icon = list(code = "f0c0", size = 75)) %>%
+      #   visGroups(groupname = "Person", shape = "icon", icon = list(code = "f007", color = "red")) %>%
+      #   visLegend() %>%
+      #   addFontAwesome()
     }
   })
   
