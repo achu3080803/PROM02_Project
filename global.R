@@ -329,7 +329,7 @@ getContentBasedMovies <- memoise(function(loginID, recLimit) {
                  " MATCH (other)-[:HAS_GENRE|:ACTED_IN|:DIRECTED|:PRODUCED_BY|:PRODUCED_IN]-(ot) ",
                  " WITH m,other,intersection,i, s1, COLLECT(ot.name) AS s2 ",
                  " WITH m,other,intersection,s1,s2 ",
-                 " WITH m,other,intersection,s1+[x IN s2 WHERE NOT x IN s1] AS union, apoc.text.join(s1, '|') AS s1_txt, apoc.text.join(s2, '|') AS s2_txt ",
+                 " WITH DISTINCT m,other,intersection,s1+[x IN s2 WHERE NOT x IN s1] AS union, apoc.text.join(s1, '|') AS s1_txt, apoc.text.join(s2, '|') AS s2_txt ",
                  " RETURN DISTINCT m.movieId AS source_id, m.title AS source_title, other.movieId AS movie_id, other.title AS title, other.avg_rating AS avg_rating, other.poster AS poster, s1_txt,s2_txt,((1.0*intersection)/SIZE(union)) AS jaccard ORDER BY jaccard DESC LIMIT ", recLimit, sep="")
   print(query)
   R <- query %>% 
@@ -371,7 +371,7 @@ getCollaborativeFilteringMovies <- memoise(function(loginID, recLimit) {
                  " ORDER BY similarity DESC ",
                  " LIMIT 10 ",
                  " MATCH (u2)-[r:REVIEWED]->(m:Movie) WHERE NOT EXISTS( (u1)-[:REVIEWED]->(m) ) ",
-                 " RETURN u1.loginId AS u1_loginId, u2.loginId AS u2_loginId, m.movieId AS movie_id, m.title AS title, m.avg_rating AS avg_rating, m.poster AS poster, SUM( similarity * r.rating) AS score ",
+                 " RETURN DISTINCT u1.loginId AS u1_loginId, u2.loginId AS u2_loginId, m.movieId AS movie_id, m.title AS title, m.avg_rating AS avg_rating, m.poster AS poster, SUM( similarity * r.rating) AS score ",
                  " ORDER BY score DESC LIMIT ", recLimit, sep="")
   print(query)
   R <- query %>% 
@@ -399,25 +399,41 @@ getCollaborativeFilteringMovies <- memoise(function(loginID, recLimit) {
 ###############################################################################################
 getActorMovies <- memoise(function(loginID, recLimit) {
   
-  print("global.R")
+  print("global.R - getActorMovies")
   print(loginID)
   print(recLimit)
   
   # loginID <- 4
   # recLimit <- 10
-  query <- paste(" MATCH (u:Person {loginId: ",loginID,"})-[r:REVIEWED]->(m:Movie) ",
-                 " WITH m, r, u ",
-                 " ORDER BY r.rating DESC LIMIT 20 ",
-                 " MATCH (m)<-[:ACTED_IN]-(a:Person)-[:ACTED_IN]->(rec) ",
-                 " WHERE NOT EXISTS( (u)-[:REVIEWED]->(rec)) ",
-                 " WITH m, rec, COUNT(a) AS as ",
-                 " RETURN m.movieId as source_id, rec.movieId AS movie_id, rec.title AS title, rec.avg_rating AS avg_rating, rec.poster AS poster, as AS score ORDER BY score DESC LIMIT ",recLimit, sep="")
+  # query <- paste(" MATCH (u:Person {loginId: ",loginID,"})-[r:REVIEWED]->(m:Movie) ",
+  #                " WITH m, r, u ",
+  #                " ORDER BY r.rating DESC LIMIT 20 ",
+  #                " MATCH (m)<-[:ACTED_IN]-(a:Person)-[:ACTED_IN]->(rec) ",
+  #                " WHERE NOT EXISTS( (u)-[:REVIEWED]->(rec)) ",
+  #                " WITH DISTINCT m, rec, COUNT(a) AS as ",
+  #                " WITH collect(m.movieId) as source_id, rec, sum(as) AS as1 ",
+  #                " WITH apoc.text.join(source_id, ',') AS source_id_csv, rec, as1 ",
+  #                " RETURN source_id_csv, rec.movieId AS movie_id, rec.title AS title, rec.avg_rating AS avg_rating, rec.poster AS poster, as1 AS score ORDER BY score DESC LIMIT ",recLimit, sep="")
+  # 
+  query <- paste( " MATCH (u:Person {loginId: ",loginID,"})-[r:REVIEWED]->(m:Movie) ",
+                  " WITH m, r, u ",
+                  " ORDER BY r.rating DESC LIMIT 20 ",
+                  " MATCH (m)<-[:ACTED_IN]-(a:Person)-[:ACTED_IN]->(rec) ",
+                  " WHERE NOT EXISTS( (u)-[:REVIEWED]->(rec)) ",
+                  " WITH DISTINCT m, rec, COUNT(a) AS as ",
+                  " WITH '\\''+m.movieId+'\\'' AS source_id, rec, as ",
+                  " WITH collect(source_id) as source_id, rec, sum(as) AS as1 ",
+                  " WITH apoc.text.join(source_id, ',') AS source_id_csv, rec, as1 ",
+                  " RETURN source_id_csv, rec.movieId AS movie_id, rec.title AS title, rec.avg_rating AS avg_rating, rec.poster AS poster, as1 AS score ORDER BY score DESC LIMIT ",recLimit, sep="")
+  
+  
   print(query)
   R <- query %>% 
     call_neo4j(con, type = "row") 
   
   return (R)
 })
+
 
 # m <- getActorMovies(1,10)
 # p<-m$rec.title[1,]$value
@@ -956,14 +972,14 @@ getCollaborativeFilteringMovieeGraph <- memoise(function(u1_loginId, u2_loginId,
 #               recMovieId - Movie ID of the Recommended Movie
 # Output:       Return a neo list that contains the graph data of the movies that are acted by the same actors of user's favorite movies 
 ###############################################################################################
-getActorMovieGraph <- memoise(function(sourceMovieId, recMovieId) {
+getActorMovieGraph <- memoise(function(sourceMovieIdCsv, recMovieId) {
   
   print("global.R - getActorMovieGraph")
   
   
   # loginID <- 4
   # recLimit <- 10
-  query <- paste('MATCH a=(m:Movie {movieId: "',sourceMovieId,'"})-[:ACTED_IN]-(t)-[:ACTED_IN]-(other:Movie {movieId: "',recMovieId,'"}) return a', sep="")
+  query <- paste('MATCH a=(m:Movie)-[:ACTED_IN]-(t)-[:ACTED_IN]-(other:Movie {movieId:"',recMovieId,'"}) WHERE m.movieId IN [',sourceMovieIdCsv,'] return a', sep="")
   print(query)
   G <- query %>% 
     call_neo4j(con, type = "graph") 

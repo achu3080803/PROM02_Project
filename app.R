@@ -897,7 +897,7 @@ server <- function(input, output) {
           u2_loginId <- m_movies$u2_loginId[i,]$value
           rb_choiceValues <- append(rb_choiceValues, paste0(u1_loginId,":",u2_loginId,":",movie_id))
         } else if (currCategory == "Movies with your favorite actors / actresses") {
-          source_id <- m_movies$source_id[i,]$value
+          source_id <- m_movies$source_id_csv[i,]$value
           rb_choiceValues <- append(rb_choiceValues, paste0(source_id,":",movie_id))
         }
       }
