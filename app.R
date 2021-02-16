@@ -806,7 +806,7 @@ server <- function(input, output) {
   # Input:        
   # Output:       Return a piece of HTML text that represents a movie tile for display
   ###############################################################################################
-  compose_movie_tile_html <- function(movie_title, movie_poster, poster_height, poster_width, star_rating){
+  compose_movie_tile_html <- function(movie_title, movie_poster, poster_height, poster_width, star_rating, score){
     movie_tile <- NULL
     # movie_tile <- append(movie_tile, '<div class="gallery">')
     # movie_tile <- append(movie_tile, paste0('<img src="',movie_poster,'" alt="',movie_title,'" height="',poster_height,'" width="',poster_width,'" ContentType="Images/jpeg" >'))
@@ -822,6 +822,7 @@ server <- function(input, output) {
                          '<div class="ratings">',
                          '<div class="empty-stars"></div>',
                          '<div class="full-stars", style="width:',star_rating,'%"></div>',
+                         '<div class="desc" >Score: ',round(score,2),'</div>',
                          '</div>',
                          '<div class="desc" >',movie_title,'</div>',
                          '</div>')
@@ -886,19 +887,20 @@ server <- function(input, output) {
         movie_title <- m_movies$title[i,]$value
         movie_poster <- m_movies$poster[i,]$value
         movie_rating <- m_movies$avg_rating[i,]$value
+        movie_score <- m_movies$score[i,]$value
         star_rating <- movie_rating/5 * 100
-        m_tile <- compose_movie_tile_html(movie_title,movie_poster,poster.height,poster.width,star_rating)
+        m_tile <- compose_movie_tile_html(movie_title,movie_poster,poster.height,poster.width,star_rating,movie_score)
         rb_choiceNames <- append(rb_choiceNames, m_tile)
         if (currCategory == "Movies similar to what you like"){
-          source_id <- m_movies$source_id[i,]$value
-          rb_choiceValues <- append(rb_choiceValues, paste0(source_id,":",movie_id))
+          source_id_csv <- m_movies$source_id_csv[i,]$value
+          rb_choiceValues <- append(rb_choiceValues, paste0(source_id_csv,":",movie_id))
         } else if (currCategory == "Others similar to you like these movies"){
           u1_loginId <- m_movies$u1_loginId[i,]$value
           u2_loginId <- m_movies$u2_loginId[i,]$value
           rb_choiceValues <- append(rb_choiceValues, paste0(u1_loginId,":",u2_loginId,":",movie_id))
         } else if (currCategory == "Movies with your favorite actors / actresses") {
-          source_id <- m_movies$source_id_csv[i,]$value
-          rb_choiceValues <- append(rb_choiceValues, paste0(source_id,":",movie_id))
+          source_id_csv <- m_movies$source_id_csv[i,]$value
+          rb_choiceValues <- append(rb_choiceValues, paste0(source_id_csv,":",movie_id))
         }
       }
       for (i in 1:length(rb_choiceNames)){
@@ -914,7 +916,7 @@ server <- function(input, output) {
     }
     
     # The options are dynamically generated on the server
-    radioButtons('movieChoice', currCategory, choiceNames=rb_choiceNames, choiceValues=rb_choiceValues, inline=TRUE)
+    radioButtons('movieChoice', "", choiceNames=rb_choiceNames, choiceValues=rb_choiceValues, inline=TRUE)
 
   })
   observe({

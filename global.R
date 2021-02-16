@@ -318,6 +318,19 @@ getContentBasedMovies <- memoise(function(loginID, recLimit) {
   
   # loginID <- 4
   # recLimit <- 10
+  # query <- paste(" MATCH (u:Person {loginId: ",loginID,"})-[r:REVIEWED]->(m:Movie) ",
+  #                " WITH m, r, u ",
+  #                " ORDER BY r.rating DESC LIMIT 5 ",
+  #                " MATCH (m)-[:HAS_GENRE|:ACTED_IN|:DIRECTED|:PRODUCED_BY|:PRODUCED_IN]-(t)-[:HAS_GENRE|:ACTED_IN|:DIRECTED|:PRODUCED_BY|:PRODUCED_IN]-(other:Movie) ",
+  #                " WHERE NOT EXISTS( (u)-[:REVIEWED]->(other) ) ",
+  #                " WITH m, other, COUNT(t) AS intersection, COLLECT(t.name) AS i ",
+  #                " MATCH (m)-[:HAS_GENRE|:ACTED_IN|:DIRECTED|:PRODUCED_BY|:PRODUCED_IN]-(mt) ",
+  #                " WITH m,other, intersection,i, COLLECT(mt.name) AS s1 ",
+  #                " MATCH (other)-[:HAS_GENRE|:ACTED_IN|:DIRECTED|:PRODUCED_BY|:PRODUCED_IN]-(ot) ",
+  #                " WITH m,other,intersection,i, s1, COLLECT(ot.name) AS s2 ",
+  #                " WITH m,other,intersection,s1,s2 ",
+  #                " WITH DISTINCT m,other,intersection,s1+[x IN s2 WHERE NOT x IN s1] AS union, apoc.text.join(s1, '|') AS s1_txt, apoc.text.join(s2, '|') AS s2_txt ",
+  #                " RETURN DISTINCT m.movieId AS source_id, m.title AS source_title, other.movieId AS movie_id, other.title AS title, other.avg_rating AS avg_rating, other.poster AS poster, s1_txt,s2_txt,((1.0*intersection)/SIZE(union)) AS jaccard ORDER BY jaccard DESC LIMIT ", recLimit, sep="")
   query <- paste(" MATCH (u:Person {loginId: ",loginID,"})-[r:REVIEWED]->(m:Movie) ",
                  " WITH m, r, u ",
                  " ORDER BY r.rating DESC LIMIT 5 ",
@@ -330,7 +343,12 @@ getContentBasedMovies <- memoise(function(loginID, recLimit) {
                  " WITH m,other,intersection,i, s1, COLLECT(ot.name) AS s2 ",
                  " WITH m,other,intersection,s1,s2 ",
                  " WITH DISTINCT m,other,intersection,s1+[x IN s2 WHERE NOT x IN s1] AS union, apoc.text.join(s1, '|') AS s1_txt, apoc.text.join(s2, '|') AS s2_txt ",
-                 " RETURN DISTINCT m.movieId AS source_id, m.title AS source_title, other.movieId AS movie_id, other.title AS title, other.avg_rating AS avg_rating, other.poster AS poster, s1_txt,s2_txt,((1.0*intersection)/SIZE(union)) AS jaccard ORDER BY jaccard DESC LIMIT ", recLimit, sep="")
+                 " WITH '\\''+m.movieId+'\\'' AS source_id, other.movieId AS movie_id, other.title AS title, other.avg_rating AS avg_rating, other.poster AS poster,((1.0*intersection)/SIZE(union)) AS jaccard ",
+                 " WITH collect(source_id) AS source_id_list, movie_id, title, avg_rating, poster, sum(jaccard) AS jaccard_sum ",
+                 " WITH apoc.text.join(source_id_list, ',') AS source_id_csv, movie_id, title, avg_rating, poster, jaccard_sum AS score",
+                 " RETURN source_id_csv, movie_id, title, avg_rating, poster, score ",
+                 " ORDER BY score DESC LIMIT ", recLimit, sep="")
+  print(query)
   print(query)
   R <- query %>% 
     call_neo4j(con, type = "row") 
@@ -362,7 +380,7 @@ getCollaborativeFilteringMovies <- memoise(function(loginID, recLimit) {
   
   # loginID <- 4
   # recLimit <- 10
-  query <- paste("MATCH (u1:Person {loginId: ",loginID,"})-[x:REVIEWED]->(movie:Movie) ",
+  query <- paste(" MATCH (u1:Person {loginId: ",loginID,"})-[x:REVIEWED]->(movie:Movie) ",
                  " WITH u1, gds.alpha.similarity.asVector(movie, x.rating) AS u1Vector ",
                  " MATCH (u2:Person)-[x2:REVIEWED]->(movie:Movie) WHERE u2 <> u1 ",
                  " WITH u1, u2, u1Vector, gds.alpha.similarity.asVector(movie, x2.rating) AS u2Vector ",
@@ -861,18 +879,18 @@ getTop10MovieDF <- memoise(function(from_year, to_year, minRatingCnt) {
 # Description:  Return a neo list that contains the graph data of the movies that are similar to users' favorite movies
 #               The output returned can be used in visNetwork to display the graph
 #               Using "memoise" to automatically cache the results
-# Input:        sourceMovieId - Movie ID of the Source Movie
+# Input:        sourceMovieIdCsv - CSV list of Movie ID of the Source Movie
 #               recMovieId - Movie ID of the Recommended Movie
 # Output:       Return a neo list that contains the graph data of the movies that are similar to users' favorite movies 
 ###############################################################################################
-getContentBasedMovieGraph <- memoise(function(sourceMovieId, recMovieId) {
+getContentBasedMovieGraph <- memoise(function(sourceMovieIdCsv, recMovieId) {
   
   print("global.R - getContentBasedMovieGraph")
 
   
   # loginID <- 4
   # recLimit <- 10
-  query <- paste('MATCH a=(m:Movie {movieId: "',sourceMovieId,'"})-[:HAS_GENRE|ACTED_IN|DIRECTED|PRODUCED_BY|PRODUCED_IN]-(t)-[:HAS_GENRE|ACTED_IN|DIRECTED|PRODUCED_BY|PRODUCED_IN]-(other:Movie {movieId: "',recMovieId,'"}) return a', sep="")
+  query <- paste('MATCH a=(m:Movie)-[:HAS_GENRE|ACTED_IN|DIRECTED|PRODUCED_BY|PRODUCED_IN]-(t)-[:HAS_GENRE|ACTED_IN|DIRECTED|PRODUCED_BY|PRODUCED_IN]-(other:Movie {movieId: "',recMovieId,'"}) WHERE m.movieId IN [',sourceMovieIdCsv,'] return a', sep="")
   print(query)
   G <- query %>% 
     call_neo4j(con, type = "graph") 
@@ -968,7 +986,7 @@ getCollaborativeFilteringMovieeGraph <- memoise(function(u1_loginId, u2_loginId,
 # Description:  Return a neo list that contains the graph data of the movies that are acted by the same actors of user's favorite movies
 #               The output returned can be used in visNetwork to display the graph
 #               Using "memoise" to automatically cache the results
-# Input:        sourceMovieId - Movie ID of the Source Movie
+# Input:        sourceMovieIdCsv - CSV list of Movie ID of the Source Movie
 #               recMovieId - Movie ID of the Recommended Movie
 # Output:       Return a neo list that contains the graph data of the movies that are acted by the same actors of user's favorite movies 
 ###############################################################################################
