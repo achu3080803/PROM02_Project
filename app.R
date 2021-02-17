@@ -52,6 +52,10 @@ ui <- dashboardPage(
                 selectizeInput("selectUser", "Login as", all_userid_df$value)
               ),
               fluidRow(
+                h1("Top 10 Movies"),
+                htmlOutput("top10Movies2")
+              ),
+              fluidRow(
                 h1("Recently rated by you"),
                 htmlOutput("watchedMovies")
               ),
@@ -220,6 +224,51 @@ server <- function(input, output) {
   ###############################################################################################
   get_curr_login <- reactive({
     return(input$selectUser)
+  })
+  
+  ###############################################################################################
+  # Function output$top10Movie2
+  #
+  # Description:  Render function to return the HTML for composing top 10 movies result
+  # Input:        
+  # Output:       HTML for composing top 10 movies result
+  ###############################################################################################
+  output$top10Movies2<-renderText({
+    #print("Hello")
+    m_posters=NULL
+    min_year = min(as.integer(ratings_df$ratedYear))
+    max_year = max(as.integer(ratings_df$ratedYear))
+    m_movies <- getTop10MovieDF(min_year,max_year, 50)
+    print("Top 10 Movies 2")
+    
+    movie_title <- ""
+    movie_rating <- 0
+
+    
+    if (length(m_movies)>0) {
+      m_posters <- append(m_posters, '<div>')
+      for (i in 1:nrow(m_movies$title)){
+        
+        movie_title <- m_movies$title[i,]$value
+        movie_poster <- m_movies$poster[i,]$value
+        movie_rating <- m_movies$avg_rating[i,]$value
+        star_rating <- movie_rating/5 * 100
+        m_posters <- append(m_posters, '<div class="gallery">')
+        m_posters <- append(m_posters, paste0('<img src="',movie_poster,'" alt="',movie_title,'" height="',poster.height,'" width="',poster.width,'" ContentType="Images/jpeg" >'))
+        m_posters <- append(m_posters, '<div class="ratings">')
+        m_posters <- append(m_posters, '<div class="empty-stars"></div>')
+        m_posters <- append(m_posters, paste0('<div class="full-stars", style="width:',star_rating,'%"></div>'))
+        m_posters <- append(m_posters, '</div>')
+        m_posters <- append(m_posters, paste0('<div class="desc" >',movie_title,'</div>'))
+        m_posters <- append(m_posters, '</div>')
+      }
+      m_posters <- append(m_posters, '</div>')
+    }
+    else{
+      m_posters <- append(m_posters, '<div><H1 style="text-align:center">No Movies Found</H1></div>')
+    }
+    #print(m_posters)
+    return(m_posters)
   })
   
   ###############################################################################################

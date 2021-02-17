@@ -859,7 +859,7 @@ getTop10MovieDF <- memoise(function(from_year, to_year, minRatingCnt) {
                  " WITH m,r, datetime({year: ",from_year,"}) as y1, datetime({year: ",to_year1,"}) as y2 ",
                  " WHERE r.timestamp >= y1.epochSeconds and r.timestamp < y2.epochSeconds ",
                  " WITH m.title AS title, m.poster as poster, AVG(r.rating) AS avg_rating, COUNT(r.rating) as rating_cnt ",
-                 " WHERE rating_cnt > ", minRatingCnt,
+                 " WHERE rating_cnt >= ", minRatingCnt,
                  " RETURN title, poster, avg_rating, rating_cnt ",
                  " ORDER BY avg_rating DESC LIMIT 10", sep="")
   
