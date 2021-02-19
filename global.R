@@ -170,7 +170,7 @@ ratings_avg_df  <- ratings_avg_df %>% left_join(year_df, by="movieId")
 #               recLimit - number of records to be returned
 # Output:       Return a neo list that contains the graph data of recently rated movies by the given user. 
 ###############################################################################################
-getRecentlyRatedMovies <- memoise(function(loginID, recLimit) {
+getRecentlyRatedMovies <- function(loginID, recLimit) {
   
   print("global.R")
   print(loginID)
@@ -221,7 +221,7 @@ getRecentlyRatedMovies <- memoise(function(loginID, recLimit) {
   }
   
   return (G)
-})
+}
 
 # m<-getRecentlyRatedMovies(4,10)
 # head(m$nodes)
@@ -241,12 +241,11 @@ getRecentlyRatedMovies <- memoise(function(loginID, recLimit) {
 # Function getFavoriteMovies
 #
 # Description:  Return a neo list that contains the graph data of the movies that have high ratings given by the user. 
-#               Using "memoise" to automatically cache the results
 # Input:        userID - User ID
 #               recLimit - number of records to be returned
 # Output:       Return a neo list that contains the graph data of recently rated movies by the given user. 
 ###############################################################################################
-getFavoriteMovies <- memoise(function(loginID, recLimit) {
+getFavoriteMovies <- function(loginID, recLimit) {
   
   print("global.R")
   print(loginID)
@@ -254,7 +253,7 @@ getFavoriteMovies <- memoise(function(loginID, recLimit) {
   
   # loginID <- 4
   # recLimit <- 10
-  query <- paste("MATCH a=(m:Movie)-[r:REVIEWED]-(p:Person {loginId: ",loginID,"}) return a order by r.rating desc limit ",recLimit, sep="")
+  query <- paste("MATCH a=(m:Movie)-[r:REVIEWED]-(p:Person {loginId: ",loginID,"}) RETURN a ORDER BY r.rating DESC, r.timestamp DESC LIMIT ",recLimit, sep="")
   print(query)
   G <- query %>% 
     call_neo4j(con, type = "graph") 
@@ -297,20 +296,18 @@ getFavoriteMovies <- memoise(function(loginID, recLimit) {
   }
   
   return (G)
-})
+}
 
-f<-getFavoriteMovies(7,10)
 
 ###############################################################################################
 # Function getContentBasedMovies
 #
 # Description:  Return a neo list that contains tibbles of the movie attributes that are similar to users' favorite movies. 
-#               Using "memoise" to automatically cache the results
 # Input:        userID - User ID
 #               recLimit - number of records to be returned
 # Output:       Return a neo list that contains tibbles of the movie attributes that are similar to users' favorite movies. 
 ###############################################################################################
-getContentBasedMovies <- memoise(function(loginID, recLimit) {
+getContentBasedMovies <- function(loginID, recLimit) {
   
   print("global.R")
   print(loginID)
@@ -333,7 +330,7 @@ getContentBasedMovies <- memoise(function(loginID, recLimit) {
   #                " RETURN DISTINCT m.movieId AS source_id, m.title AS source_title, other.movieId AS movie_id, other.title AS title, other.avg_rating AS avg_rating, other.poster AS poster, s1_txt,s2_txt,((1.0*intersection)/SIZE(union)) AS jaccard ORDER BY jaccard DESC LIMIT ", recLimit, sep="")
   query <- paste(" MATCH (u:Person {loginId: ",loginID,"})-[r:REVIEWED]->(m:Movie) ",
                  " WITH m, r, u ",
-                 " ORDER BY r.rating DESC LIMIT 5 ",
+                 " ORDER BY r.rating DESC, r.timestamp DESC LIMIT 5 ",
                  " MATCH (m)-[:HAS_GENRE|:ACTED_IN|:DIRECTED|:PRODUCED_BY|:PRODUCED_IN]-(t)-[:HAS_GENRE|:ACTED_IN|:DIRECTED|:PRODUCED_BY|:PRODUCED_IN]-(other:Movie) ",
                  " WHERE NOT EXISTS( (u)-[:REVIEWED]->(other) ) ",
                  " WITH m, other, COUNT(t) AS intersection, COLLECT(t.name) AS i ",
@@ -349,12 +346,11 @@ getContentBasedMovies <- memoise(function(loginID, recLimit) {
                  " RETURN source_id_csv, movie_id, title, avg_rating, poster, score ",
                  " ORDER BY score DESC LIMIT ", recLimit, sep="")
   print(query)
-  print(query)
   R <- query %>% 
     call_neo4j(con, type = "row") 
 
   return (R)
-})
+}
 # m <- getContentBasedMovies(1,10)
 # head(m)
 # print(m$other.title[1,])
@@ -367,12 +363,11 @@ getContentBasedMovies <- memoise(function(loginID, recLimit) {
 # Function getCollaborativeFilteringMovies
 #
 # Description:  Return a neo list that contains the graph data of the movies that are similar to users' favorite movies. 
-#               Using "memoise" to automatically cache the results
 # Input:        userID - User ID
 #               recLimit - number of records to be returned
 # Output:       Return a neo list that contains the graph data of recently rated movies by the given user. 
 ###############################################################################################
-getCollaborativeFilteringMovies <- memoise(function(loginID, recLimit) {
+getCollaborativeFilteringMovies <- function(loginID, recLimit) {
   
   print("global.R")
   print(loginID)
@@ -396,7 +391,7 @@ getCollaborativeFilteringMovies <- memoise(function(loginID, recLimit) {
     call_neo4j(con, type = "row") 
   
   return (R)
-})
+}
 
 # m <- getCollaborativeFilteringMovies(1,10)
 # head(m)
@@ -415,7 +410,7 @@ getCollaborativeFilteringMovies <- memoise(function(loginID, recLimit) {
 #               recLimit - number of records to be returned
 # Output:       Return a neo list that contains the graph data of recently rated movies by the given user. 
 ###############################################################################################
-getActorMovies <- memoise(function(loginID, recLimit) {
+getActorMovies <- function(loginID, recLimit) {
   
   print("global.R - getActorMovies")
   print(loginID)
@@ -450,7 +445,7 @@ getActorMovies <- memoise(function(loginID, recLimit) {
     call_neo4j(con, type = "row") 
   
   return (R)
-})
+}
 
 
 # m <- getActorMovies(1,10)
@@ -844,7 +839,7 @@ getUserRatingHistogramDF <- memoise(function() {
 #               minRatingCnt - Minimum number of ratings the movies should have
 # Output:       Return a data frame that contains top 10 movies that satisfy the input criteria.
 ###############################################################################################
-getTop10MovieDF <- memoise(function(from_year, to_year, minRatingCnt) {
+getTop10MovieDF <- function(from_year, to_year, minRatingCnt) {
 
   print("global.R - getTop10MovieDF")
   print(from_year)
@@ -868,7 +863,7 @@ getTop10MovieDF <- memoise(function(from_year, to_year, minRatingCnt) {
     call_neo4j(con, type = "row") 
   
   return (R)
-})
+}
 
 # m<-getTop10MovieDF(2000,2001,5)
 # head(m)
@@ -883,7 +878,7 @@ getTop10MovieDF <- memoise(function(from_year, to_year, minRatingCnt) {
 #               recMovieId - Movie ID of the Recommended Movie
 # Output:       Return a neo list that contains the graph data of the movies that are similar to users' favorite movies 
 ###############################################################################################
-getContentBasedMovieGraph <- memoise(function(sourceMovieIdCsv, recMovieId) {
+getContentBasedMovieGraph <- function(sourceMovieIdCsv, recMovieId) {
   
   print("global.R - getContentBasedMovieGraph")
 
@@ -924,7 +919,7 @@ getContentBasedMovieGraph <- memoise(function(sourceMovieIdCsv, recMovieId) {
     select(from = startNode, to = endNode, label = type)
   
   return (G)
-})
+}
 
 ###############################################################################################
 # Function getCollaborativeFilteringMovieeGraph
@@ -937,7 +932,7 @@ getContentBasedMovieGraph <- memoise(function(sourceMovieIdCsv, recMovieId) {
 #               recMovieId - Movie ID of the Recommended Movie
 # Output:       Return a neo list that contains the graph data of the movies that the other users who are similar to user like
 ###############################################################################################
-getCollaborativeFilteringMovieeGraph <- memoise(function(u1_loginId, u2_loginId, recMovieId) {
+getCollaborativeFilteringMovieeGraph <- function(u1_loginId, u2_loginId, recMovieId) {
   
   print("global.R - getContentBasedMovieGraph")
   
@@ -976,7 +971,7 @@ getCollaborativeFilteringMovieeGraph <- memoise(function(u1_loginId, u2_loginId,
   G$relationships$label <- paste("Rating: ",G$relationships$label)
 
   return (G)
-})
+}
 
 #k<-getCollaborativeFilteringMovieeGraph(1,210,122886)
 
@@ -990,7 +985,7 @@ getCollaborativeFilteringMovieeGraph <- memoise(function(u1_loginId, u2_loginId,
 #               recMovieId - Movie ID of the Recommended Movie
 # Output:       Return a neo list that contains the graph data of the movies that are acted by the same actors of user's favorite movies 
 ###############################################################################################
-getActorMovieGraph <- memoise(function(sourceMovieIdCsv, recMovieId) {
+getActorMovieGraph <- function(sourceMovieIdCsv, recMovieId) {
   
   print("global.R - getActorMovieGraph")
   
@@ -1026,4 +1021,61 @@ getActorMovieGraph <- memoise(function(sourceMovieIdCsv, recMovieId) {
     select(from = startNode, to = endNode, label = type)
   
   return (G)
+}
+
+###############################################################################################
+# Function searchMovies
+#
+# Description:  Return a neo list that contains tibbles of the attributes of movies that match the input movie title. 
+#               Using "memoise" to automatically cache the results
+# Input:        movieTitle - Movie Title
+#               recLimit - number of records to be returned
+# Output:       Return a neo list that contains tibbles of the attributes of movies that match the input movie title.
+###############################################################################################
+searchdMovies <- memoise(function(movieTitle, recLimit) {
+  
+  print("global.R")
+  print(movieTitle)
+  print(recLimit)
+  
+  query <- paste(' MATCH (m:Movie) WHERE toLower(m.title) CONTAINS toLower("',movieTitle,'") RETURN m.movieId AS movie_id, m.title AS title, m.avg_rating AS avg_rating, m.poster AS poster ORDER BY m.title DESC LIMIT  ', recLimit, sep="")
+  print(query)
+
+  R <- query %>% 
+    call_neo4j(con, type = "row") 
+  
+  return (R)
 })
+
+###############################################################################################
+# Function updateMovieRating
+#
+# Description:  Update the rating of a given Movie with the given rating. 
+# Input:        loginID - Login ID
+#               movieId - Movie ID
+#               rating - rating
+# Output:       N/A
+###############################################################################################
+updateMovieRating <- function(loginId, movieId, rating) {
+  
+  print("global.R - updateMovieRating")
+  print(movieId)
+  print(rating)
+  
+  #query <- paste(' MATCH (m:Movie)-[r:REVIEWED]-(p:Person {loginId: ',loginId,' }) WHERE m.movieId = "',movieId,'" SET r.rating = ',rating, sep="")
+  # query <- paste(' MATCH (m:Movie)-[r:REVIEWED]-(p:Person {loginId: ',loginId,' }) ', 
+  #                ' WITH m,r,p,apoc.date.currentTimestamp()/1000 as ts ',
+  #                ' WHERE m.movieId = "',movieId,'" SET r.rating = ',rating,', r.timestamp=ts, r.review_date = apoc.date.format(apoc.convert.toInteger(ts),"s","yyyy-MM-dd HH:mm:ss zzz")',sep="")
+  query <- paste(' MATCH (m:Movie {movieId: "',movieId,'"}), (p:Person {loginId: ',loginId,'}) ',
+                 ' WITH p, m, apoc.date.currentTimestamp()/1000 as ts ',
+                 ' MERGE (p)-[r:REVIEWED]->(m) ',
+                 ' ON CREATE SET r.rating = ',rating,', r.timestamp=ts, r.review_date = apoc.date.format(apoc.convert.toInteger(ts),"s","yyyy-MM-dd HH:mm:ss zzz") ',
+                 ' ON MATCH SET r.rating = ',rating,', r.timestamp=ts, r.review_date = apoc.date.format(apoc.convert.toInteger(ts),"s","yyyy-MM-dd HH:mm:ss zzz") ',sep="")
+  print(query)
+  R <- query %>% 
+    call_neo4j(con, type = "row") 
+  
+  #return (R)
+}
+
+

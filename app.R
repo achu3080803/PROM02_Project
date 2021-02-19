@@ -5,6 +5,7 @@ library(ggplot2)
 library(leaflet)
 library(RCurl)
 library(rjson)
+library(ShinyRatingInput)
 
 
 source("./global.R", local=TRUE)
@@ -18,6 +19,7 @@ ui <- dashboardPage(
   dashboardSidebar(
     sidebarMenu(
       menuItem("Recommended Movies", tabName = "recommended_movies", icon = icon("film")),
+      menuItem("Movie Rating", tabName = "movie_rating", icon = icon("film")),
       menuItem("Basic Analysis", tabName = "analysis", icon = icon("th")),
       menuItem("Deep Analysis", tabName = "graph", icon = icon("th"))
     )
@@ -74,6 +76,40 @@ ui <- dashboardPage(
               fluidRow(
                 h1("Movies with your favorite actors / actresses"),
                 htmlOutput("cbActorMovies")
+              )
+      ),
+      tabItem(
+              tabName = "movie_rating",
+              fluidRow(
+                h1("Movie Rating"),
+                box(
+                  width = 2,
+                  selectizeInput("selectUser2", "Login as", all_userid_df$value),
+                )
+              ),
+              fluidRow(
+                h1("Movie Search"),
+                box(
+                  width = 10,
+                  column(7,textInput("searchMovieTitle", "Please enter Movie Title below:")),
+                  #column(3,actionButton("movieSearch", "Search"))
+                )
+              ),
+              fluidRow(
+                y <- uiOutput("radioMovieTilesForSearch")
+              ),
+              fluidRow(
+                h1("Give your rating here:"),
+                box(
+                  width = 10,
+                  htmlOutput("txt")
+                  )
+              ),
+              fluidRow(
+                width = 10,
+                ratingInput("movieRating", label="", dataStop=5, dataFractions=2),
+                # htmlOutput("movieRating"),
+                actionButton("submitRating", "Submit")
               )
       ),
       tabItem(tabName = "analysis",
@@ -569,6 +605,167 @@ server <- function(input, output) {
   #
   ###############################################################################################
   
+  ###############################################################################################
+  #
+  # Movie Rating TAB (START)
+  #
+  ###############################################################################################
+  
+  ###############################################################################################
+  # Function get_search_user
+  #
+  # Description:  Return the current selected USER ID
+  # Input:        
+  # Output:       Return the current selected USER ID
+  ###############################################################################################
+  get_search_user <- reactive({
+    return(input$selectUser2)
+  })
+  
+  ###############################################################################################
+  # Function get_search_user
+  #
+  # Description:  Return the current selected USER ID
+  # Input:        
+  # Output:       Return the current selected USER ID
+  ###############################################################################################
+  get_search_movie_title <- reactive({
+    return(input$searchMovieTitle)
+  })
+  
+  ###############################################################################################
+  # Function output$radioMovieTilesForSearch
+  #
+  # Description:  Reactive function to a matrix of genres that satisfy the criteria
+  # Input:        
+  # Output:       Matrix of genres that satisfy the criteria
+  ###############################################################################################
+  output$radioMovieTilesForSearch <- renderUI({
+    
+    input$movieSearch
+    
+    print("radioMovieTilesForSearch")
+    i_movie_title=get_search_movie_title()
+    m_posters=NULL
+    m_movies=NULL
+    rb_choiceNames=list()
+    rb_choiceValues=list()
+    
+    m_movies <- searchdMovies(i_movie_title,30)
+    #m_movies <- NULL
+    
+    if (length(m_movies)>0) {
+      
+      for (i in 1:nrow(m_movies$title)){
+        movie_id <- m_movies$movie_id[i,]$value
+        movie_title <- m_movies$title[i,]$value
+        movie_poster <- m_movies$poster[i,]$value
+        movie_rating <- m_movies$avg_rating[i,]$value
+        movie_score <- 0
+        star_rating <- movie_rating/5 * 100
+        m_tile <- compose_movie_tile_html(movie_title,movie_poster,poster.height,poster.width,star_rating,movie_score)
+        rb_choiceNames <- append(rb_choiceNames, m_tile)
+        rb_choiceValues <- append(rb_choiceValues, paste0(movie_id,";",movie_title,";",movie_poster))
+      }
+      for (i in 1:length(rb_choiceNames)){
+        rb_choiceNames[[i]]<-HTML(rb_choiceNames[[i]])
+      }
+      print("rb_choiceNames:")
+      print(rb_choiceNames)
+      print("rb_choiceValues:")
+      print(rb_choiceValues)
+      
+      # The options are dynamically generated on the server
+      radioButtons('movieChoice2', "", choiceNames=rb_choiceNames, choiceValues=rb_choiceValues, inline=TRUE)
+    }
+    else {
+      #rb_choiceNames <- c("No Movies")
+      movie_id <- 0
+      movie_title <- "No Movie Found"
+      movie_poster <- "movie_star.jpg"
+      movie_rating <- 0
+      movie_score <- 0
+      star_rating <- movie_rating/5 * 100
+      m_tile <- compose_movie_tile_html(movie_title,movie_poster,poster.height,poster.width,star_rating,movie_score)
+      HTML(m_tile)
+    }
+    
+    # The options are dynamically generated on the server
+    #radioButtons('movieChoice2', "", choiceNames=rb_choiceNames, choiceValues=rb_choiceValues, inline=TRUE)
+    
+  })
+  
+  observeEvent(input$submitRating, {
+      
+    if (!is.null(input$movieChoice2) && !is.null(input$movieRating)) {
+      if (input$movieChoice2 != "" && input$movieRating != "") {
+        login_id <- input$selectUser2
+        params<-unlist(strsplit(input$movieChoice2, ";"))
+        movie_id <- params[1]
+        user_rating <- input$movieRating
+        print(paste("Login: ",login_id," Movie: ",movie_id," Rating: ",user_rating))  
+        updateMovieRating(login_id, movie_id, user_rating)
+      }
+    }
+  })
+  
+  # observe({
+  #   input$submitRating
+  #   
+  #   isolate(
+  #     output$text <- renderText({
+  #       paste("Radiobutton response is:", input$movieChoice2 )
+  #     })
+  #   )
+  # })
+
+  ###############################################################################################
+  # Function submitRating
+  #
+  # Description:  Reactive function to a matrix of genres that satisfy the criteria
+  # Input:        
+  # Output:       Matrix of genres that satisfy the criteria
+  ###############################################################################################
+  # submitRating <- reactive({
+  #   # Change when the "submitRating" button is pressed...
+  #   input$submitRating
+  #   # ...but not for anything else
+  #   print(paste("submitRating: ",input$movieChoice2))  
+  #   return (input$movieChoice2)
+  #   
+  # })  
+  # 
+  # output$text <- renderText({
+  #   v <- submitRating()
+  #   isolate({
+  #     paste("Selected movie is:", v,"<br>", "" )
+  #   })
+  # })
+  
+  output$txt <- renderText({
+    movieChoice <- unlist(strsplit(as.character(input$movieChoice2),";"))
+    #movieChoice <- unlist(strsplit(input$movieChoice2,";"))
+    movie_title <- movieChoice[2]
+    movie_poster <- movieChoice[3]
+    print(movie_poster)
+    paste('<div>',
+          '<div class="gallery">',
+          '<img src="',movie_poster,'" alt="',movie_title,'" height="',poster.height,'" width="',poster.width,'" ContentType="Images/jpeg" >',
+          '<div class="desc" >',movie_title,'</div>',
+          '</div>',
+          '</div>')
+    #paste('<font size="+2">',movie_title,'</font>')
+  })
+  
+  output$movieRating <- renderText({
+    paste('<font size="+2">The movie was rated as',input$movieRating,'</font>')
+  })
+  
+  ###############################################################################################
+  #
+  # Movie Rating TAB (END)
+  #
+  ###############################################################################################
 
   ###############################################################################################
   #
@@ -968,19 +1165,16 @@ server <- function(input, output) {
     radioButtons('movieChoice', "", choiceNames=rb_choiceNames, choiceValues=rb_choiceValues, inline=TRUE)
 
   })
-  observe({
-    input$submit
-    
-    isolate(
-      output$text <- renderText({
-        paste("Radiobutton response is:", input$movieChoice )
-      })
-    )
-  })
+  # observe({
+  #   input$submit
+  #   
+  #   isolate(
+  #     output$text <- renderText({
+  #       paste("Radiobutton response is:", input$movieChoice )
+  #     })
+  #   )
+  # })
   
-  output$txt <- renderText({
-    paste("You chose", input$rb)
-  })
   
   output$myNetId <- renderVisNetwork({
     visNetwork(nodes, edges)
