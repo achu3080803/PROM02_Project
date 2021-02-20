@@ -430,7 +430,7 @@ getActorMovies <- function(loginID, recLimit) {
   # 
   query <- paste( " MATCH (u:Person {loginId: ",loginID,"})-[r:REVIEWED]->(m:Movie) ",
                   " WITH m, r, u ",
-                  " ORDER BY r.rating DESC LIMIT 20 ",
+                  " ORDER BY r.rating DESC, r.timestamp DESC LIMIT 20 ",
                   " MATCH (m)<-[:ACTED_IN]-(a:Person)-[:ACTED_IN]->(rec) ",
                   " WHERE NOT EXISTS( (u)-[:REVIEWED]->(rec)) ",
                   " WITH DISTINCT m, rec, COUNT(a) AS as ",

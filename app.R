@@ -96,20 +96,16 @@ ui <- dashboardPage(
                 )
               ),
               fluidRow(
-                y <- uiOutput("radioMovieTilesForSearch")
+                y <- uiOutput("radioMovieTilesForSearch"),
+                HTML("<br>"),
+                HTML("<br>")
               ),
               fluidRow(
                 h1("Give your rating here:"),
                 box(
                   width = 10,
-                  htmlOutput("txt")
+                  z <- uiOutput("chosenMovie")
                   )
-              ),
-              fluidRow(
-                width = 10,
-                ratingInput("movieRating", label="", dataStop=5, dataFractions=2),
-                # htmlOutput("movieRating"),
-                actionButton("submitRating", "Submit")
               )
       ),
       tabItem(tabName = "analysis",
@@ -354,7 +350,7 @@ server <- function(input, output) {
     print("favoriteMovies")
     currUser=get_analyze_user()
     m_posters=NULL
-    m_graph <- getFavoriteMovies(currUser,10)
+    m_graph <- getFavoriteMovies(currUser,20)
     m_movies <- m_graph$nodes[m_graph$nodes[]$node_type=="Movie",]
     
     #print(currUser)
@@ -661,7 +657,7 @@ server <- function(input, output) {
         movie_title <- m_movies$title[i,]$value
         movie_poster <- m_movies$poster[i,]$value
         movie_rating <- m_movies$avg_rating[i,]$value
-        movie_score <- 0
+        movie_score <- NULL
         star_rating <- movie_rating/5 * 100
         m_tile <- compose_movie_tile_html(movie_title,movie_poster,poster.height,poster.width,star_rating,movie_score)
         rb_choiceNames <- append(rb_choiceNames, m_tile)
@@ -684,7 +680,7 @@ server <- function(input, output) {
       movie_title <- "No Movie Found"
       movie_poster <- "movie_star.jpg"
       movie_rating <- 0
-      movie_score <- 0
+      movie_score <- NULL
       star_rating <- movie_rating/5 * 100
       m_tile <- compose_movie_tile_html(movie_title,movie_poster,poster.height,poster.width,star_rating,movie_score)
       HTML(m_tile)
@@ -742,19 +738,24 @@ server <- function(input, output) {
   #   })
   # })
   
-  output$txt <- renderText({
+  output$chosenMovie <- renderUI({
     movieChoice <- unlist(strsplit(as.character(input$movieChoice2),";"))
-    #movieChoice <- unlist(strsplit(input$movieChoice2,";"))
     movie_title <- movieChoice[2]
-    movie_poster <- movieChoice[3]
-    print(movie_poster)
-    paste('<div>',
-          '<div class="gallery">',
-          '<img src="',movie_poster,'" alt="',movie_title,'" height="',poster.height,'" width="',poster.width,'" ContentType="Images/jpeg" >',
-          '<div class="desc" >',movie_title,'</div>',
-          '</div>',
-          '</div>')
-    #paste('<font size="+2">',movie_title,'</font>')
+    movie_title_html <- HTML(paste('<font size="+2">',movie_title,'</font>'))
+    poster_height <- poster.height * 1.5
+    poster_width <- poster.width * 1.5
+    movie_poster <- HTML(paste('<img src="',movieChoice[3],'" alt="',movie_title,'" size=+2 height="',poster_height,'" width="',poster_width,'" ContentType="Images/jpeg" >'))
+    #print(movie_poster)
+
+    tagList(div(movie_poster, 
+                div(movie_title_html, 
+                    div(ratingInput("movieRating", label="", dataStop=5, dataFractions=2)
+                    )
+                )
+            ),
+            div(HTML("<br>"),actionButton("submitRating", "Submit"))
+    )
+    
   })
   
   output$movieRating <- renderText({
@@ -1067,8 +1068,11 @@ server <- function(input, output) {
                          '<img src="',movie_poster,'" alt="',movie_title,'" height="',poster_height,'" width="',poster_width,'" ContentType="Images/jpeg" >',
                          '<div class="ratings">',
                          '<div class="empty-stars"></div>',
-                         '<div class="full-stars", style="width:',star_rating,'%"></div>',
-                         '<div class="desc" >Score: ',round(score,2),'</div>',
+                         '<div class="full-stars", style="width:',star_rating,'%"></div>')
+    if(!is.null(score)) {
+      movie_tile <- paste0(movie_tile,'<div class="desc" >Score: ',round(score,2),'</div>')
+    }
+    movie_tile <- paste0(movie_tile,
                          '</div>',
                          '<div class="desc" >',movie_title,'</div>',
                          '</div>')
