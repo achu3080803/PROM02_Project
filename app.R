@@ -104,8 +104,15 @@ ui <- dashboardPage(
                 h1("Give your rating here:"),
                 box(
                   width = 10,
-                  z <- uiOutput("chosenMovie")
+                  mainPanel(
+                    column(3,
+                      z <- uiOutput("chosenMovie")
+                    ),
+                    column(7,
+                      htmlOutput("moviePlot")
+                    )
                   )
+                )
               )
       ),
       tabItem(tabName = "analysis",
@@ -760,6 +767,13 @@ server <- function(input, output) {
   
   output$movieRating <- renderText({
     paste('<font size="+2">The movie was rated as',input$movieRating,'</font>')
+  })
+  
+  output$moviePlot<-renderText({
+    movieChoice <- unlist(strsplit(as.character(input$movieChoice2),";"))
+    movie_id <- movieChoice[1] 
+    m_movies <- searchdMoviesById(movie_id)
+    movie_plot <- HTML(paste('<div><h2>Movie Descrption</h2></div><br><br><div><font size="+1">',m_movies$plot[1,]$value,'</font></div>'))
   })
   
   ###############################################################################################

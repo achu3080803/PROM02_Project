@@ -435,7 +435,10 @@ getActorMovies <- function(loginID, recLimit) {
                   " ORDER BY score DESC limit 10 ",
                   " MATCH (actor)-[:ACTED_IN]->(rec) ",
                   " WHERE NOT EXISTS( (u)-[:REVIEWED]->(rec) ) ",
-                  " RETURN actor.name AS actor_name, source_id_csv, rec.movieId AS movie_id, rec.title AS title, rec.avg_rating AS avg_rating, rec.poster AS poster, rec.avg_rating * score AS score ",
+                  #" RETURN actor.name AS actor_name, source_id_csv, rec.movieId AS movie_id, rec.title AS title, rec.avg_rating AS avg_rating, rec.poster AS poster, rec.avg_rating * score AS score ",
+                  " WITH '\\''+actor.name+'\\'' AS actor_name, rec, source_id_csv, score",
+                  " WITH apoc.text.join(collect(actor_name), ',') AS actor_csv, rec, source_id_csv, sum(score) AS score ",
+                  " RETURN actor_csv, source_id_csv, rec.movieId AS movie_id, rec.title AS title, rec.avg_rating AS avg_rating, rec.poster AS poster, rec.avg_rating * score AS score ",
                   " ORDER BY score DESC LIMIT ",recLimit, sep="")
   
   print(query)
@@ -1032,13 +1035,36 @@ getActorMovieGraph <- function(sourceMovieIdCsv, recMovieId) {
 ###############################################################################################
 searchdMovies <- memoise(function(movieTitle, recLimit) {
   
-  print("global.R")
+  print("global.R - searchdMovies")
   print(movieTitle)
   print(recLimit)
   
   query <- paste(' MATCH (m:Movie) WHERE toLower(m.title) CONTAINS toLower("',movieTitle,'") RETURN m.movieId AS movie_id, m.title AS title, m.avg_rating AS avg_rating, m.poster AS poster ORDER BY m.title DESC LIMIT  ', recLimit, sep="")
   print(query)
 
+  R <- query %>% 
+    call_neo4j(con, type = "row") 
+  
+  return (R)
+})
+
+###############################################################################################
+# Function searchMovies
+#
+# Description:  Return a neo list that contains tibbles of the attributes of movies that match the input movie title. 
+#               Using "memoise" to automatically cache the results
+# Input:        movieTitle - Movie Title
+#               recLimit - number of records to be returned
+# Output:       Return a neo list that contains tibbles of the attributes of movies that match the input movie title.
+###############################################################################################
+searchdMoviesById <- memoise(function(movieId) {
+  
+  print("global.R - searchdMoviesById")
+  print(movieId)
+  
+  query <- paste(' MATCH (m:Movie {movieId:"',movieId,'"}) RETURN m.movieId AS movie_id, m.title AS title, m.avg_rating AS avg_rating, m.poster AS poster, m.plot AS plot ORDER BY m.title DESC ', sep="")
+  print(query)
+  
   R <- query %>% 
     call_neo4j(con, type = "row") 
   
