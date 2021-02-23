@@ -773,7 +773,12 @@ server <- function(input, output) {
     movieChoice <- unlist(strsplit(as.character(input$movieChoice2),";"))
     movie_id <- movieChoice[1] 
     m_movies <- searchdMoviesById(movie_id)
-    movie_plot <- HTML(paste('<div><h2>Movie Descrption</h2></div><br><br><div><font size="+1">',m_movies$plot[1,]$value,'</font></div>'))
+    movie_plot <- HTML(paste('<div><h2>Movie Descrption</h2></div><br><div><font size="+1">',m_movies$plot[1,]$value,'</font></div><br><br>',
+                             '<div><h3>Production</h3>',m_movies$company_csv[1,]$value,'<br>',
+                             '<div><h3>Starring</h3>',m_movies$actor_csv[1,]$value,'<br>',
+                             '<div><h3>Genres</h3>',m_movies$genre_csv[1,]$value,'<br>'
+                            )
+    )
   })
   
   ###############################################################################################

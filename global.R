@@ -1062,7 +1062,16 @@ searchdMoviesById <- memoise(function(movieId) {
   print("global.R - searchdMoviesById")
   print(movieId)
   
-  query <- paste(' MATCH (m:Movie {movieId:"',movieId,'"}) RETURN m.movieId AS movie_id, m.title AS title, m.avg_rating AS avg_rating, m.poster AS poster, m.plot AS plot ORDER BY m.title DESC ', sep="")
+  #query <- paste(' MATCH (m:Movie {movieId:"',movieId,'"}) RETURN m.movieId AS movie_id, m.title AS title, m.avg_rating AS avg_rating, m.poster AS poster, m.plot AS plot ORDER BY m.title DESC ', sep="")
+  query <- paste(' MATCH (a:Person)-[:ACTED_IN]->(m:Movie {movieId:"',movieId,'"}) ',
+                  ' WITH apoc.text.join(collect(a.name), ",") AS actor_csv,m ',
+                  ' MATCH (m)-[:PRODUCED_BY]-(c:Company) ', 
+                  ' WITH  apoc.text.join(collect(c.name), ",") AS company_csv, actor_csv, m ',
+                  ' MATCH (m)-[:DIRECTED]-(d:Person) ',
+                  ' WITH apoc.text.join(collect(d.name), ",") AS director_csv, company_csv, actor_csv, m ',
+                  ' MATCH (m)-[:HAS_GENRE]-(g:Genre) ',
+                  ' RETURN apoc.text.join(collect(g.name), ",") AS genre_csv, director_csv, company_csv, actor_csv, m.movieId AS movie_id, m.title AS title, ',
+                  ' m.avg_rating AS avg_rating, m.poster AS poster, m.plot AS plot, m.year AS year ', sep="")
   print(query)
   
   R <- query %>% 
