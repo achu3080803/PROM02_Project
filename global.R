@@ -418,27 +418,25 @@ getActorMovies <- function(loginID, recLimit) {
   
   # loginID <- 4
   # recLimit <- 10
-  # query <- paste(" MATCH (u:Person {loginId: ",loginID,"})-[r:REVIEWED]->(m:Movie) ",
-  #                " WITH m, r, u ",
-  #                " ORDER BY r.rating DESC LIMIT 20 ",
-  #                " MATCH (m)<-[:ACTED_IN]-(a:Person)-[:ACTED_IN]->(rec) ",
-  #                " WHERE NOT EXISTS( (u)-[:REVIEWED]->(rec)) ",
-  #                " WITH DISTINCT m, rec, COUNT(a) AS as ",
-  #                " WITH collect(m.movieId) as source_id, rec, sum(as) AS as1 ",
-  #                " WITH apoc.text.join(source_id, ',') AS source_id_csv, rec, as1 ",
-  #                " RETURN source_id_csv, rec.movieId AS movie_id, rec.title AS title, rec.avg_rating AS avg_rating, rec.poster AS poster, as1 AS score ORDER BY score DESC LIMIT ",recLimit, sep="")
-  # 
-  query <- paste( " MATCH (u:Person {loginId: ",loginID,"})-[r:REVIEWED]->(m:Movie) ",
-                  " WITH m, r, u ",
-                  " ORDER BY r.rating DESC, r.timestamp DESC LIMIT 20 ",
-                  " MATCH (m)<-[:ACTED_IN]-(a:Person)-[:ACTED_IN]->(rec) ",
-                  " WHERE NOT EXISTS( (u)-[:REVIEWED]->(rec)) ",
-                  " WITH DISTINCT m, rec, COUNT(a) AS as ",
-                  " WITH '\\''+m.movieId+'\\'' AS source_id, rec, as ",
-                  " WITH collect(source_id) as source_id, rec, sum(as) AS as1 ",
-                  " WITH apoc.text.join(source_id, ',') AS source_id_csv, rec, as1 ",
-                  " RETURN source_id_csv, rec.movieId AS movie_id, rec.title AS title, rec.avg_rating AS avg_rating, rec.poster AS poster, as1 AS score ORDER BY score DESC LIMIT ",recLimit, sep="")
-  
+  # query <- paste( " MATCH (u:Person {loginId: ",loginID,"})-[r:REVIEWED]->(m:Movie) ",
+  #                 " WITH m, r, u ",
+  #                 " ORDER BY r.rating DESC, r.timestamp DESC LIMIT 20 ",
+  #                 " MATCH (m)<-[:ACTED_IN]-(a:Person)-[:ACTED_IN]->(rec) ",
+  #                 " WHERE NOT EXISTS( (u)-[:REVIEWED]->(rec)) ",
+  #                 " WITH DISTINCT m, rec, COUNT(a) AS as ",
+  #                 " WITH '\\''+m.movieId+'\\'' AS source_id, rec, as ",
+  #                 " WITH collect(source_id) as source_id, rec, sum(as) AS as1 ",
+  #                 " WITH apoc.text.join(source_id, ',') AS source_id_csv, rec, as1 ",
+  #                 " RETURN source_id_csv, rec.movieId AS movie_id, rec.title AS title, rec.avg_rating AS avg_rating, rec.poster AS poster, as1 AS score ORDER BY score DESC LIMIT ",recLimit, sep="")
+  query <- paste( " Match(actor:Person)-[a:ACTED_IN]-(m:Movie)-[r:REVIEWED]-(u:Person {loginId: ",loginID,"}) ",
+                  " WITH '\\''+m.movieId+'\\'' AS source_id, u, actor, r ",
+                  " WITH u, actor, apoc.text.join(collect(source_id), ',') AS source_id_csv, sum(r.rating) AS score ",
+                  " WITH u, actor, source_id_csv, score ",
+                  " ORDER BY score DESC limit 10 ",
+                  " MATCH (actor)-[:ACTED_IN]->(rec) ",
+                  " WHERE NOT EXISTS( (u)-[:REVIEWED]->(rec) ) ",
+                  " RETURN actor.name AS actor_name, source_id_csv, rec.movieId AS movie_id, rec.title AS title, rec.avg_rating AS avg_rating, rec.poster AS poster, rec.avg_rating * score AS score ",
+                  " ORDER BY score DESC LIMIT ",recLimit, sep="")
   
   print(query)
   R <- query %>% 
