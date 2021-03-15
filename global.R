@@ -47,77 +47,77 @@ head(all_userid_df)
 head(ratings_df)
 
 #G2 <-"MATCH a=(p:Person {name: 'Tom Hanks'})-[r:ACTED_IN]->(m:Movie) RETURN a;" %>% 
-G2 <- 'MATCH a=(m:Movie {movieId: "1210"})-[:HAS_GENRE|ACTED_IN|DIRECTED|PRODUCED_BY|PRODUCED_IN]-(t)-[:HAS_GENRE|ACTED_IN|DIRECTED|PRODUCED_BY|PRODUCED_IN]-(other:Movie {movieId: "122886"}) return a' %>% 
-  call_neo4j(con, type = "graph") 
-
-# We'll just unnest the properties
-G2$nodes <- G2$nodes %>%
-  unnest_nodes(what = "properties")
-#head(G2$nodes)  
-
-# Add a new column
-G2$nodes$group <- unlist(G2$nodes$label)  
-G2$nodes$shape <- "circle" 
-G2$nodes$image <- "" 
-G2$nodes$icon <- vector(mode = "list", length = 10)
-G2$nodes$label <- G2$nodes$title
-
-typeof(G2$nodes[1,]$shape)
-
-#G2$nodes[G2$nodes$group=="Movie",]$label = G2$nodes[G2$nodes$group=="Movie",]$title
-G2$nodes[G2$nodes$group=="Movie",]$shape = "image"
-G2$nodes[G2$nodes$group=="Movie",]$image = G2$nodes[G2$nodes$group=="Movie",]$poster
-G2$nodes[G2$nodes$group=="Person",]$shape =""
-G2$nodes[G2$nodes$group=="Person",]$label = G2$nodes[G2$nodes$group=="Person",]$name
-G2$nodes[G2$nodes$group=="Company",]$label = G2$nodes[G2$nodes$group=="Company",]$name
-G2$nodes[G2$nodes$group=="Genre",]$label = G2$nodes[G2$nodes$group=="Genre",]$name
-G2$nodes[G2$nodes$group=="Country",]$label = G2$nodes[G2$nodes$group=="Country",]$name
-G2$nodes$title <- G2$nodes$group
-
-test<-list(list(code = "f007", color = "red"),list(code = "f007", color = "red"),list(code = "f007", color = "red"))
-l<-length(G2$nodes[G2$nodes$group=="Person",]$icon)
-
-test1<-G2$nodes[G2$nodes$group=="Person",]$icon
-iconList <- vector(mode = "list", length = l)
-iconList<-list(code = "f007", color = "red")
-df<-data.frame(iconList)
-df <- rbind(df, list(code = "f007", color = "red"))
-rbind(df, list(code = "f007", color = "red"))
-
-typeof(df[1,])
-typeof(G2$nodes[G2$nodes$group=="Person",]$icon)
-typeof(G2$nodes[G2$nodes$group=="Person",])
-print(df[1,])
-G2$nodes[G2$nodes$group=="Person",]$icon = list(list(code = "f007", color = "red"))
-print(G2$nodes[G2$nodes$group=="Person",]$icon[1])
-
-# Turn the relationships :
-G2$relationships <- G2$relationships %>%
-  unnest_relationships() %>%
-  select(from = startNode, to = endNode, label = type)
-
-typeof(G2$nodes)
-
-G2nodesdf <- data.frame(G2$nodes)
-visNetwork(G2$nodes, G2$relationships) %>% 
-  visNodes(font = list(color = "#ffffff")) %>% 
-  visGroups(groupname="Person",shape = "icon", icon = list(code = "f007", color = "red")) %>%
-  visGroups(groupname="Movie",shape = "image") %>%
-  visGroups(groupname="Company",shape = "dot") %>%
-  visGroups(groupname="Genre",shape = "dot") %>%
-  visGroups(groupname="Country",shape = "dot") %>%
-  visEdges(font = list(color = "#ffffff", strokeColor = "#000000")) %>%
-  visPhysics(barnesHut = list(springConstant=0)) %>%
-  addFontAwesome()
-
-visNetwork(G2$nodes, G2$relationships) %>% 
-  visGroups(groupname="Person",shape = "icon", icon = list(code = "f007", color = "red")) %>%
-  addFontAwesome()
-
-d <- paste0("a",":","b")
-params <- unlist(strsplit(d,":"))
-print(params[2])
-print(params)
+# G2 <- 'MATCH a=(m:Movie {movieId: "1210"})-[:HAS_GENRE|ACTED_IN|DIRECTED|PRODUCED_BY|PRODUCED_IN]-(t)-[:HAS_GENRE|ACTED_IN|DIRECTED|PRODUCED_BY|PRODUCED_IN]-(other:Movie {movieId: "122886"}) return a' %>% 
+#   call_neo4j(con, type = "graph") 
+# 
+# # We'll just unnest the properties
+# G2$nodes <- G2$nodes %>%
+#   unnest_nodes(what = "properties")
+# #head(G2$nodes)  
+# 
+# # Add a new column
+# G2$nodes$group <- unlist(G2$nodes$label)  
+# G2$nodes$shape <- "circle" 
+# G2$nodes$image <- "" 
+# G2$nodes$icon <- vector(mode = "list", length = 10)
+# G2$nodes$label <- G2$nodes$title
+# 
+# typeof(G2$nodes[1,]$shape)
+# 
+# #G2$nodes[G2$nodes$group=="Movie",]$label = G2$nodes[G2$nodes$group=="Movie",]$title
+# G2$nodes[G2$nodes$group=="Movie",]$shape = "image"
+# G2$nodes[G2$nodes$group=="Movie",]$image = G2$nodes[G2$nodes$group=="Movie",]$poster
+# G2$nodes[G2$nodes$group=="Person",]$shape =""
+# G2$nodes[G2$nodes$group=="Person",]$label = G2$nodes[G2$nodes$group=="Person",]$name
+# G2$nodes[G2$nodes$group=="Company",]$label = G2$nodes[G2$nodes$group=="Company",]$name
+# G2$nodes[G2$nodes$group=="Genre",]$label = G2$nodes[G2$nodes$group=="Genre",]$name
+# G2$nodes[G2$nodes$group=="Country",]$label = G2$nodes[G2$nodes$group=="Country",]$name
+# G2$nodes$title <- G2$nodes$group
+# 
+# test<-list(list(code = "f007", color = "red"),list(code = "f007", color = "red"),list(code = "f007", color = "red"))
+# l<-length(G2$nodes[G2$nodes$group=="Person",]$icon)
+# 
+# test1<-G2$nodes[G2$nodes$group=="Person",]$icon
+# iconList <- vector(mode = "list", length = l)
+# iconList<-list(code = "f007", color = "red")
+# df<-data.frame(iconList)
+# df <- rbind(df, list(code = "f007", color = "red"))
+# rbind(df, list(code = "f007", color = "red"))
+# 
+# typeof(df[1,])
+# typeof(G2$nodes[G2$nodes$group=="Person",]$icon)
+# typeof(G2$nodes[G2$nodes$group=="Person",])
+# print(df[1,])
+# G2$nodes[G2$nodes$group=="Person",]$icon = list(list(code = "f007", color = "red"))
+# print(G2$nodes[G2$nodes$group=="Person",]$icon[1])
+# 
+# # Turn the relationships :
+# G2$relationships <- G2$relationships %>%
+#   unnest_relationships() %>%
+#   select(from = startNode, to = endNode, label = type)
+# 
+# typeof(G2$nodes)
+# 
+# G2nodesdf <- data.frame(G2$nodes)
+# visNetwork(G2$nodes, G2$relationships) %>% 
+#   visNodes(font = list(color = "#ffffff")) %>% 
+#   visGroups(groupname="Person",shape = "icon", icon = list(code = "f007", color = "red")) %>%
+#   visGroups(groupname="Movie",shape = "image") %>%
+#   visGroups(groupname="Company",shape = "dot") %>%
+#   visGroups(groupname="Genre",shape = "dot") %>%
+#   visGroups(groupname="Country",shape = "dot") %>%
+#   visEdges(font = list(color = "#ffffff", strokeColor = "#000000")) %>%
+#   visPhysics(barnesHut = list(springConstant=0)) %>%
+#   addFontAwesome()
+# 
+# visNetwork(G2$nodes, G2$relationships) %>% 
+#   visGroups(groupname="Person",shape = "icon", icon = list(code = "f007", color = "red")) %>%
+#   addFontAwesome()
+# 
+# d <- paste0("a",":","b")
+# params <- unlist(strsplit(d,":"))
+# print(params[2])
+# print(params)
 
 #head(G2$relationships)
 
@@ -315,22 +315,16 @@ getContentBasedMovies <- function(loginID, recLimit) {
   
   # loginID <- 4
   # recLimit <- 10
-  # query <- paste(" MATCH (u:Person {loginId: ",loginID,"})-[r:REVIEWED]->(m:Movie) ",
-  #                " WITH m, r, u ",
-  #                " ORDER BY r.rating DESC LIMIT 5 ",
-  #                " MATCH (m)-[:HAS_GENRE|:ACTED_IN|:DIRECTED|:PRODUCED_BY|:PRODUCED_IN]-(t)-[:HAS_GENRE|:ACTED_IN|:DIRECTED|:PRODUCED_BY|:PRODUCED_IN]-(other:Movie) ",
-  #                " WHERE NOT EXISTS( (u)-[:REVIEWED]->(other) ) ",
-  #                " WITH m, other, COUNT(t) AS intersection, COLLECT(t.name) AS i ",
-  #                " MATCH (m)-[:HAS_GENRE|:ACTED_IN|:DIRECTED|:PRODUCED_BY|:PRODUCED_IN]-(mt) ",
-  #                " WITH m,other, intersection,i, COLLECT(mt.name) AS s1 ",
-  #                " MATCH (other)-[:HAS_GENRE|:ACTED_IN|:DIRECTED|:PRODUCED_BY|:PRODUCED_IN]-(ot) ",
-  #                " WITH m,other,intersection,i, s1, COLLECT(ot.name) AS s2 ",
-  #                " WITH m,other,intersection,s1,s2 ",
-  #                " WITH DISTINCT m,other,intersection,s1+[x IN s2 WHERE NOT x IN s1] AS union, apoc.text.join(s1, '|') AS s1_txt, apoc.text.join(s2, '|') AS s2_txt ",
-  #                " RETURN DISTINCT m.movieId AS source_id, m.title AS source_title, other.movieId AS movie_id, other.title AS title, other.avg_rating AS avg_rating, other.poster AS poster, s1_txt,s2_txt,((1.0*intersection)/SIZE(union)) AS jaccard ORDER BY jaccard DESC LIMIT ", recLimit, sep="")
+
+  query <- paste0("MATCH (u:Person {loginId: ",loginID,"}) RETURN u.profile_favorite_limit as profile_favorite_limit")
+  R <- query %>% 
+    call_neo4j(con, type = "row")
+  fav_limit <- R$profile_favorite_limit[1,]$value
+  
   query <- paste(" MATCH (u:Person {loginId: ",loginID,"})-[r:REVIEWED]->(m:Movie) ",
                  " WITH m, r, u ",
-                 " ORDER BY r.rating DESC, r.timestamp DESC LIMIT 5 ",
+                 #" ORDER BY r.rating DESC, r.timestamp DESC LIMIT 5 ",
+                 " ORDER BY r.rating DESC, r.timestamp DESC LIMIT ",fav_limit," ",
                  " MATCH (m)-[:HAS_GENRE|:ACTED_IN|:DIRECTED|:PRODUCED_BY|:PRODUCED_IN]-(t)-[:HAS_GENRE|:ACTED_IN|:DIRECTED|:PRODUCED_BY|:PRODUCED_IN]-(other:Movie) ",
                  " WHERE NOT EXISTS( (u)-[:REVIEWED]->(other) ) ",
                  " WITH m, other, COUNT(t) AS intersection, COLLECT(t.name) AS i ",
@@ -998,31 +992,34 @@ getActorMovieGraph <- function(sourceMovieIdCsv, recMovieId) {
   G <- query %>% 
     call_neo4j(con, type = "graph") 
   
-  # We'll just unnest the properties
-  G$nodes <- G$nodes %>%
-    unnest_nodes(what = "properties")
+  if (length(G) > 0) {
+    # We'll just unnest the properties
+    G$nodes <- G$nodes %>%
+      unnest_nodes(what = "properties")
   
-  # Add a new column
-  G$nodes$group <- unlist(G$nodes$label)  
-  #G$nodes$shape <- "dot" 
-  # G$nodes$image <- "" 
-  # G$nodes$label <- G$nodes$title
-  # 
-  # #G$nodes[G$nodes$group=="Movie",]$shape = "image"
-  # G$nodes[G$nodes$group=="Movie",]$image = G$nodes[G$nodes$group=="Movie",]$poster
-  # G$nodes[G$nodes$group=="Person",]$label = G$nodes[G$nodes$group=="Person",]$name
-  # G$nodes[G$nodes$group=="Company",]$label = G$nodes[G$nodes$group=="Company",]$name
-  # G$nodes[G$nodes$group=="Genre",]$label = G$nodes[G$nodes$group=="Genre",]$name
-  # G$nodes[G$nodes$group=="Country",]$label = G$nodes[G$nodes$group=="Country",]$name
-  # G$nodes$title <- paste('<p style="color:Black;font-size:14px">',G$nodes$group,'</p>')
-  
-  # Turn the relationships :
-  G$relationships <- G$relationships %>%
-    unnest_relationships() %>%
-    select(from = startNode, to = endNode, label = type)
-  
+    # Add a new column
+    G$nodes$group <- unlist(G$nodes$label)  
+    #G$nodes$shape <- "dot" 
+    # G$nodes$image <- "" 
+    # G$nodes$label <- G$nodes$title
+    # 
+    # #G$nodes[G$nodes$group=="Movie",]$shape = "image"
+    # G$nodes[G$nodes$group=="Movie",]$image = G$nodes[G$nodes$group=="Movie",]$poster
+    # G$nodes[G$nodes$group=="Person",]$label = G$nodes[G$nodes$group=="Person",]$name
+    # G$nodes[G$nodes$group=="Company",]$label = G$nodes[G$nodes$group=="Company",]$name
+    # G$nodes[G$nodes$group=="Genre",]$label = G$nodes[G$nodes$group=="Genre",]$name
+    # G$nodes[G$nodes$group=="Country",]$label = G$nodes[G$nodes$group=="Country",]$name
+    # G$nodes$title <- paste('<p style="color:Black;font-size:14px">',G$nodes$group,'</p>')
+    
+    # Turn the relationships :
+    G$relationships <- G$relationships %>%
+      unnest_relationships() %>%
+      select(from = startNode, to = endNode, label = type)
+  }
   return (G)
 }
+
+#G <- getActorMovieGraph ("1395","'553','157','1298','3053','3448'")
 
 ###############################################################################################
 # Function searchMovies
