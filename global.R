@@ -307,7 +307,7 @@ getFavoriteMovies <- function(loginID, recLimit) {
 #               recLimit - number of records to be returned
 # Output:       Return a neo list that contains tibbles of the movie attributes that are similar to users' favorite movies. 
 ###############################################################################################
-getContentBasedMovies <- function(loginID, recLimit) {
+getContentBasedMovies <- function(loginID, recLimit, testMode) {
   
   print("global.R")
   print(loginID)
@@ -321,24 +321,43 @@ getContentBasedMovies <- function(loginID, recLimit) {
     call_neo4j(con, type = "row")
   fav_limit <- R$profile_favorite_limit[1,]$value
   
-  query <- paste(" MATCH (u:Person {loginId: ",loginID,"})-[r:REVIEWED]->(m:Movie) ",
-                 " WITH m, r, u ",
-                 #" ORDER BY r.rating DESC, r.timestamp DESC LIMIT 5 ",
-                 " ORDER BY r.rating DESC, r.timestamp DESC LIMIT ",fav_limit," ",
-                 " MATCH (m)-[:HAS_GENRE|:ACTED_IN|:DIRECTED|:PRODUCED_BY|:PRODUCED_IN]-(t)-[:HAS_GENRE|:ACTED_IN|:DIRECTED|:PRODUCED_BY|:PRODUCED_IN]-(other:Movie) ",
-                 " WHERE NOT EXISTS( (u)-[:REVIEWED]->(other) ) ",
-                 " WITH m, other, COUNT(t) AS intersection, COLLECT(t.name) AS i ",
-                 " MATCH (m)-[:HAS_GENRE|:ACTED_IN|:DIRECTED|:PRODUCED_BY|:PRODUCED_IN]-(mt) ",
-                 " WITH m,other, intersection,i, COLLECT(mt.name) AS s1 ",
-                 " MATCH (other)-[:HAS_GENRE|:ACTED_IN|:DIRECTED|:PRODUCED_BY|:PRODUCED_IN]-(ot) ",
-                 " WITH m,other,intersection,i, s1, COLLECT(ot.name) AS s2 ",
-                 " WITH m,other,intersection,s1,s2 ",
-                 " WITH DISTINCT m,other,intersection,s1+[x IN s2 WHERE NOT x IN s1] AS union, apoc.text.join(s1, '|') AS s1_txt, apoc.text.join(s2, '|') AS s2_txt ",
-                 " WITH '\\''+m.movieId+'\\'' AS source_id, other.movieId AS movie_id, other.title AS title, other.avg_rating AS avg_rating, other.poster AS poster,((1.0*intersection)/SIZE(union)) AS jaccard ",
-                 " WITH collect(source_id) AS source_id_list, movie_id, title, avg_rating, poster, sum(jaccard) AS jaccard_sum ",
-                 " WITH apoc.text.join(source_id_list, ',') AS source_id_csv, movie_id, title, avg_rating, poster, jaccard_sum AS score",
-                 " RETURN source_id_csv, movie_id, title, avg_rating, poster, score ",
-                 " ORDER BY score DESC LIMIT ", recLimit, sep="")
+  if (testMode == "Y") {
+    query <- paste(" MATCH (u:Person {loginId: ",loginID,"})-[r:REVIEWED {split: 'TRAIN'}]->(m:Movie) ",
+                   " WITH m, r, u ",
+                   " ORDER BY r.rating DESC, r.timestamp DESC LIMIT ",fav_limit," ",
+                   " MATCH (m)-[:HAS_GENRE|:ACTED_IN|:DIRECTED|:PRODUCED_BY|:PRODUCED_IN]-(t)-[:HAS_GENRE|:ACTED_IN|:DIRECTED|:PRODUCED_BY|:PRODUCED_IN]-(other:Movie) ",
+                   " WHERE NOT EXISTS( (u)-[:REVIEWED  {split: 'TRAIN'}]->(other) ) ",
+                   " WITH m, other, COUNT(t) AS intersection, COLLECT(t.name) AS i ",
+                   " MATCH (m)-[:HAS_GENRE|:ACTED_IN|:DIRECTED|:PRODUCED_BY|:PRODUCED_IN]-(mt) ",
+                   " WITH m,other, intersection,i, COLLECT(mt.name) AS s1 ",
+                   " MATCH (other)-[:HAS_GENRE|:ACTED_IN|:DIRECTED|:PRODUCED_BY|:PRODUCED_IN]-(ot) ",
+                   " WITH m,other,intersection,i, s1, COLLECT(ot.name) AS s2 ",
+                   " WITH m,other,intersection,s1,s2 ",
+                   " WITH DISTINCT m,other,intersection,s1+[x IN s2 WHERE NOT x IN s1] AS union, apoc.text.join(s1, '|') AS s1_txt, apoc.text.join(s2, '|') AS s2_txt ",
+                   " WITH '\\''+m.movieId+'\\'' AS source_id, other.movieId AS movie_id, other.title AS title, other.avg_rating AS avg_rating, other.poster AS poster,((1.0*intersection)/SIZE(union)) AS jaccard ",
+                   " WITH collect(source_id) AS source_id_list, movie_id, title, avg_rating, poster, sum(jaccard) AS jaccard_sum ",
+                   " WITH apoc.text.join(source_id_list, ',') AS source_id_csv, movie_id, title, avg_rating, poster, jaccard_sum AS score",
+                   " RETURN source_id_csv, movie_id, title, avg_rating, poster, score ",
+                   " ORDER BY score DESC LIMIT ", recLimit, sep="")
+  } else {
+    query <- paste(" MATCH (u:Person {loginId: ",loginID,"})-[r:REVIEWED]->(m:Movie) ",
+                   " WITH m, r, u ",
+                   " ORDER BY r.rating DESC, r.timestamp DESC LIMIT ",fav_limit," ",
+                   " MATCH (m)-[:HAS_GENRE|:ACTED_IN|:DIRECTED|:PRODUCED_BY|:PRODUCED_IN]-(t)-[:HAS_GENRE|:ACTED_IN|:DIRECTED|:PRODUCED_BY|:PRODUCED_IN]-(other:Movie) ",
+                   " WHERE NOT EXISTS( (u)-[:REVIEWED]->(other) ) ",
+                   " WITH m, other, COUNT(t) AS intersection, COLLECT(t.name) AS i ",
+                   " MATCH (m)-[:HAS_GENRE|:ACTED_IN|:DIRECTED|:PRODUCED_BY|:PRODUCED_IN]-(mt) ",
+                   " WITH m,other, intersection,i, COLLECT(mt.name) AS s1 ",
+                   " MATCH (other)-[:HAS_GENRE|:ACTED_IN|:DIRECTED|:PRODUCED_BY|:PRODUCED_IN]-(ot) ",
+                   " WITH m,other,intersection,i, s1, COLLECT(ot.name) AS s2 ",
+                   " WITH m,other,intersection,s1,s2 ",
+                   " WITH DISTINCT m,other,intersection,s1+[x IN s2 WHERE NOT x IN s1] AS union, apoc.text.join(s1, '|') AS s1_txt, apoc.text.join(s2, '|') AS s2_txt ",
+                   " WITH '\\''+m.movieId+'\\'' AS source_id, other.movieId AS movie_id, other.title AS title, other.avg_rating AS avg_rating, other.poster AS poster,((1.0*intersection)/SIZE(union)) AS jaccard ",
+                   " WITH collect(source_id) AS source_id_list, movie_id, title, avg_rating, poster, sum(jaccard) AS jaccard_sum ",
+                   " WITH apoc.text.join(source_id_list, ',') AS source_id_csv, movie_id, title, avg_rating, poster, jaccard_sum AS score",
+                   " RETURN source_id_csv, movie_id, title, avg_rating, poster, score ",
+                   " ORDER BY score DESC LIMIT ", recLimit, sep="")    
+  }
   print(query)
   R <- query %>% 
     call_neo4j(con, type = "row") 
@@ -361,25 +380,71 @@ getContentBasedMovies <- function(loginID, recLimit) {
 #               recLimit - number of records to be returned
 # Output:       Return a neo list that contains the graph data of recently rated movies by the given user. 
 ###############################################################################################
-getCollaborativeFilteringMovies <- function(loginID, recLimit) {
+getCollaborativeFilteringMovies <- function(loginID, recLimit, testMode) {
   
   print("global.R")
   print(loginID)
   print(recLimit)
   
+  v_intersect <- 10
+  
   # loginID <- 4
   # recLimit <- 10
-  query <- paste(" MATCH (u1:Person {loginId: ",loginID,"})-[x:REVIEWED]->(movie:Movie) ",
-                 " WITH u1, gds.alpha.similarity.asVector(movie, x.rating) AS u1Vector ",
-                 " MATCH (u2:Person)-[x2:REVIEWED]->(movie:Movie) WHERE u2 <> u1 ",
-                 " WITH u1, u2, u1Vector, gds.alpha.similarity.asVector(movie, x2.rating) AS u2Vector ",
-                 " WHERE size(apoc.coll.intersection([v in u1Vector | v.category], [v in u2Vector | v.category])) > 10 ",
-                 " WITH u1, u2,  gds.alpha.similarity.pearson(u1Vector, u2Vector, {vectorType: 'maps'}) AS similarity ",
-                 " ORDER BY similarity DESC ",
-                 " LIMIT 10 ",
-                 " MATCH (u2)-[r:REVIEWED]->(m:Movie) WHERE NOT EXISTS( (u1)-[:REVIEWED]->(m) ) ",
-                 " RETURN DISTINCT u1.loginId AS u1_loginId, u2.loginId AS u2_loginId, m.movieId AS movie_id, m.title AS title, m.avg_rating AS avg_rating, m.poster AS poster, SUM( similarity * r.rating) AS score ",
-                 " ORDER BY score DESC LIMIT ", recLimit, sep="")
+  if (testMode == "Y") {
+    find_max_intersect <- paste0(" MATCH (u1:Person {loginId: ",loginID,"})-[x:REVIEWED {split: 'TRAIN'}]->(movie:Movie) ",
+                                 " WITH u1, gds.alpha.similarity.asVector(movie, x.rating) AS u1Vector ",
+                                 " MATCH (u2:Person)-[x2:REVIEWED {split: 'TRAIN'}]->(movie:Movie) WHERE u2 <> u1 ",
+                                 " WITH u1, u2, u1Vector, gds.alpha.similarity.asVector(movie, x2.rating) AS u2Vector ",
+                                 " WITH size(apoc.coll.intersection([v in u1Vector | v.category], [v in u2Vector | v.category])) as v_intersect ",
+                                 " RETURN MAX(v_intersect) AS max_intersect ", sep="")
+    print(find_max_intersect)
+    result <- find_max_intersect %>%
+      call_neo4j(con, type = "row") 
+    
+    max_intersect <- result$max_intersect[1,]$value
+    if (max_intersect < v_intersect) {
+      v_intersect <- max_intersect
+    }
+    
+    query <- paste(" MATCH (u1:Person {loginId: ",loginID,"})-[x:REVIEWED {split: 'TRAIN'}]->(movie:Movie) ",
+                   " WITH u1, gds.alpha.similarity.asVector(movie, x.rating) AS u1Vector ",
+                   " MATCH (u2:Person)-[x2:REVIEWED {split: 'TRAIN'}]->(movie:Movie) WHERE u2 <> u1 ",
+                   " WITH u1, u2, u1Vector, gds.alpha.similarity.asVector(movie, x2.rating) AS u2Vector ",
+                   " WHERE size(apoc.coll.intersection([v in u1Vector | v.category], [v in u2Vector | v.category])) >= ",v_intersect," ",
+                   " WITH u1, u2,  gds.alpha.similarity.pearson(u1Vector, u2Vector, {vectorType: 'maps'}) AS similarity ",
+                   " ORDER BY similarity DESC ",
+                   " LIMIT 10 ",
+                   " MATCH (u2)-[r:REVIEWED {split: 'TRAIN'}]->(m:Movie) WHERE NOT EXISTS( (u1)-[:REVIEWED {split: 'TRAIN'}]->(m) ) ",
+                   " RETURN DISTINCT u1.loginId AS u1_loginId, u2.loginId AS u2_loginId, m.movieId AS movie_id, m.title AS title, m.avg_rating AS avg_rating, m.poster AS poster, SUM( similarity * r.rating) AS score ",
+                   " ORDER BY score DESC LIMIT ", recLimit, sep="")
+  } else {
+    find_max_intersect <- paste0(" MATCH (u1:Person {loginId: ",loginID,"})-[x:REVIEWED]->(movie:Movie) ",
+                                 " WITH u1, gds.alpha.similarity.asVector(movie, x.rating) AS u1Vector ",
+                                 " MATCH (u2:Person)-[x2:REVIEWED]->(movie:Movie) WHERE u2 <> u1 ",
+                                 " WITH u1, u2, u1Vector, gds.alpha.similarity.asVector(movie, x2.rating) AS u2Vector ",
+                                 " WITH size(apoc.coll.intersection([v in u1Vector | v.category], [v in u2Vector | v.category])) as v_intersect ",
+                                 " RETURN MAX(v_intersect) AS max_intersect ", sep="")
+    print(find_max_intersect)
+    result <- find_max_intersect %>%
+      call_neo4j(con, type = "row") 
+    
+    max_intersect <- result$max_intersect[1,]$value
+    if (max_intersect < v_intersect) {
+      v_intersect <- max_intersect
+    }
+    
+    query <- paste(" MATCH (u1:Person {loginId: ",loginID,"})-[x:REVIEWED]->(movie:Movie) ",
+                   " WITH u1, gds.alpha.similarity.asVector(movie, x.rating) AS u1Vector ",
+                   " MATCH (u2:Person)-[x2:REVIEWED]->(movie:Movie) WHERE u2 <> u1 ",
+                   " WITH u1, u2, u1Vector, gds.alpha.similarity.asVector(movie, x2.rating) AS u2Vector ",
+                   " WHERE size(apoc.coll.intersection([v in u1Vector | v.category], [v in u2Vector | v.category])) >= ",v_intersect," ",
+                   " WITH u1, u2,  gds.alpha.similarity.pearson(u1Vector, u2Vector, {vectorType: 'maps'}) AS similarity ",
+                   " ORDER BY similarity DESC ",
+                   " LIMIT 10 ",
+                   " MATCH (u2)-[r:REVIEWED]->(m:Movie) WHERE NOT EXISTS( (u1)-[:REVIEWED]->(m) ) ",
+                   " RETURN DISTINCT u1.loginId AS u1_loginId, u2.loginId AS u2_loginId, m.movieId AS movie_id, m.title AS title, m.avg_rating AS avg_rating, m.poster AS poster, SUM( similarity * r.rating) AS score ",
+                   " ORDER BY score DESC LIMIT ", recLimit, sep="")
+  }
   print(query)
   R <- query %>% 
     call_neo4j(con, type = "row") 
@@ -396,7 +461,7 @@ getCollaborativeFilteringMovies <- function(loginID, recLimit) {
 # nrow(m$m.title)
 
 ###############################################################################################
-# Function getCollaborativeFilteringMovies
+# Function getActorMovies
 #
 # Description:  Return a neo list that contains the graph data of the movies that are similar to users' favorite movies. 
 #               Using "memoise" to automatically cache the results
@@ -404,36 +469,39 @@ getCollaborativeFilteringMovies <- function(loginID, recLimit) {
 #               recLimit - number of records to be returned
 # Output:       Return a neo list that contains the graph data of recently rated movies by the given user. 
 ###############################################################################################
-getActorMovies <- function(loginID, recLimit) {
+getActorMovies <- function(loginID, recLimit, testMode) {
   
   print("global.R - getActorMovies")
   print(loginID)
   print(recLimit)
   
-  # loginID <- 4
-  # recLimit <- 10
-  # query <- paste( " MATCH (u:Person {loginId: ",loginID,"})-[r:REVIEWED]->(m:Movie) ",
-  #                 " WITH m, r, u ",
-  #                 " ORDER BY r.rating DESC, r.timestamp DESC LIMIT 20 ",
-  #                 " MATCH (m)<-[:ACTED_IN]-(a:Person)-[:ACTED_IN]->(rec) ",
-  #                 " WHERE NOT EXISTS( (u)-[:REVIEWED]->(rec)) ",
-  #                 " WITH DISTINCT m, rec, COUNT(a) AS as ",
-  #                 " WITH '\\''+m.movieId+'\\'' AS source_id, rec, as ",
-  #                 " WITH collect(source_id) as source_id, rec, sum(as) AS as1 ",
-  #                 " WITH apoc.text.join(source_id, ',') AS source_id_csv, rec, as1 ",
-  #                 " RETURN source_id_csv, rec.movieId AS movie_id, rec.title AS title, rec.avg_rating AS avg_rating, rec.poster AS poster, as1 AS score ORDER BY score DESC LIMIT ",recLimit, sep="")
-  query <- paste( " Match(actor:Person)-[a:ACTED_IN]-(m:Movie)-[r:REVIEWED]-(u:Person {loginId: ",loginID,"}) ",
-                  " WITH '\\''+m.movieId+'\\'' AS source_id, u, actor, r ",
-                  " WITH u, actor, apoc.text.join(collect(source_id), ',') AS source_id_csv, sum(r.rating) AS score ",
-                  " WITH u, actor, source_id_csv, score ",
-                  " ORDER BY score DESC limit 10 ",
-                  " MATCH (actor)-[:ACTED_IN]->(rec) ",
-                  " WHERE NOT EXISTS( (u)-[:REVIEWED]->(rec) ) ",
-                  #" RETURN actor.name AS actor_name, source_id_csv, rec.movieId AS movie_id, rec.title AS title, rec.avg_rating AS avg_rating, rec.poster AS poster, rec.avg_rating * score AS score ",
-                  " WITH '\\''+actor.name+'\\'' AS actor_name, rec, source_id_csv, score",
-                  " WITH apoc.text.join(collect(actor_name), ',') AS actor_csv, rec, source_id_csv, sum(score) AS score ",
-                  " RETURN actor_csv, source_id_csv, rec.movieId AS movie_id, rec.title AS title, rec.avg_rating AS avg_rating, rec.poster AS poster, rec.avg_rating * score AS score ",
-                  " ORDER BY score DESC LIMIT ",recLimit, sep="")
+  if (testMode == "Y") {
+    query <- paste( " Match(actor:Person)-[a:ACTED_IN]-(m:Movie)-[r:REVIEWED {split: 'TRAIN'}]-(u:Person {loginId: ",loginID,"}) ",
+                    " WITH '\\''+m.movieId+'\\'' AS source_id, u, actor, r ",
+                    " WITH u, actor, apoc.text.join(collect(source_id), ',') AS source_id_csv, sum(r.rating) AS score ",
+                    " WITH u, actor, source_id_csv, score ",
+                    " ORDER BY score DESC limit 10 ",
+                    " MATCH (actor)-[:ACTED_IN]->(rec) ",
+                    " WHERE NOT EXISTS( (u)-[:REVIEWED {split: 'TRAIN'}]->(rec) ) ",
+                    #" RETURN actor.name AS actor_name, source_id_csv, rec.movieId AS movie_id, rec.title AS title, rec.avg_rating AS avg_rating, rec.poster AS poster, rec.avg_rating * score AS score ",
+                    " WITH '\\''+actor.name+'\\'' AS actor_name, rec, source_id_csv, score",
+                    " WITH apoc.text.join(collect(actor_name), ',') AS actor_csv, rec, source_id_csv, sum(score) AS score ",
+                    " RETURN actor_csv, source_id_csv, rec.movieId AS movie_id, rec.title AS title, rec.avg_rating AS avg_rating, rec.poster AS poster, rec.avg_rating * score AS score ",
+                    " ORDER BY score DESC LIMIT ",recLimit, sep="")
+  } else {
+    query <- paste( " Match(actor:Person)-[a:ACTED_IN]-(m:Movie)-[r:REVIEWED]-(u:Person {loginId: ",loginID,"}) ",
+                    " WITH '\\''+m.movieId+'\\'' AS source_id, u, actor, r ",
+                    " WITH u, actor, apoc.text.join(collect(source_id), ',') AS source_id_csv, sum(r.rating) AS score ",
+                    " WITH u, actor, source_id_csv, score ",
+                    " ORDER BY score DESC limit 10 ",
+                    " MATCH (actor)-[:ACTED_IN]->(rec) ",
+                    " WHERE NOT EXISTS( (u)-[:REVIEWED]->(rec) ) ",
+                    #" RETURN actor.name AS actor_name, source_id_csv, rec.movieId AS movie_id, rec.title AS title, rec.avg_rating AS avg_rating, rec.poster AS poster, rec.avg_rating * score AS score ",
+                    " WITH '\\''+actor.name+'\\'' AS actor_name, rec, source_id_csv, score",
+                    " WITH apoc.text.join(collect(actor_name), ',') AS actor_csv, rec, source_id_csv, sum(score) AS score ",
+                    " RETURN actor_csv, source_id_csv, rec.movieId AS movie_id, rec.title AS title, rec.avg_rating AS avg_rating, rec.poster AS poster, rec.avg_rating * score AS score ",
+                    " ORDER BY score DESC LIMIT ",recLimit, sep="")    
+  }
   
   print(query)
   R <- query %>% 

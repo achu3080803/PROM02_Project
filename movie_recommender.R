@@ -117,6 +117,10 @@ get_movie_url <-function(inMovieId) {
 # Add a year column
 movies_df <- movies_df %>%
   mutate(year = substr(title,nchar(title)-4,nchar(title)-1))
+
+# Fix the data
+movies_df[9519,]$title <- "Death Note: Desu noto (2006)"
+
 #Save the new structured movies_df to movies.csv
 
 # Initialize the new column POSTER to NA
@@ -147,6 +151,10 @@ write_csv(movies_df,"movies1.csv")
 #
 # Separate the genre list into separate columns
 #
+movies_df<-read.csv("movies1.csv", encoding="UTF8")
+movies_df1<-read.csv("movies_df1.csv", encoding="UTF8")
+movies_df2<-read.csv("movies_df2.csv", encoding="UTF8")
+
 genres <- as.data.frame(movies_df$genres, stringsAsFactors=FALSE)
 genres2 <- as.data.frame(tstrsplit(genres[,1], '[|]', type.convert=TRUE), stringsAsFactors=FALSE)
 colnames(genres2) <- c(1:7)

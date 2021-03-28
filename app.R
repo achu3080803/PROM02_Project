@@ -393,7 +393,7 @@ server <- function(input, output) {
     print("cbMovies")
     currUser=get_curr_login()
     m_posters=NULL
-    m_movies <- getContentBasedMovies(currUser,10)
+    m_movies <- getContentBasedMovies(currUser,10,"N")
     
     #print(currUser)
     #print(length(m_graph$nodes))
@@ -427,7 +427,7 @@ server <- function(input, output) {
     print("cfPopularMovies")
     currUser=get_curr_login()
     m_posters=NULL
-    m_movies <- getCollaborativeFilteringMovies(currUser,10)
+    m_movies <- getCollaborativeFilteringMovies(currUser,10,"N")
     
     #print(currUser)
     #print(length(m_graph$nodes))
@@ -461,7 +461,7 @@ server <- function(input, output) {
     print("cbActorMovies")
     currUser=get_curr_login()
     m_posters=NULL
-    m_movies <- getActorMovies(currUser,10)
+    m_movies <- getActorMovies(currUser,10,"N")
     
     #print(currUser)
     #print(length(m_graph$nodes))
@@ -1117,11 +1117,11 @@ server <- function(input, output) {
     
 
     if (currCategory == "Movies similar to what you like"){
-      m_movies <- getContentBasedMovies(currUser,10)
+      m_movies <- getContentBasedMovies(currUser,10,"N")
     } else if (currCategory == "Others similar to you like these movies"){
-      m_movies <- getCollaborativeFilteringMovies(currUser,10)
+      m_movies <- getCollaborativeFilteringMovies(currUser,10,"N")
     } else if (currCategory == "Movies with your favorite actors / actresses") {
-      m_movies <- getActorMovies(currUser,10)
+      m_movies <- getActorMovies(currUser,10,"N")
     }
 
     if (length(m_movies)>0) {
@@ -1142,11 +1142,11 @@ server <- function(input, output) {
     
     
     if (currCategory == "Movies similar to what you like"){
-      m_movies <- getContentBasedMovies(currUser,10)
+      m_movies <- getContentBasedMovies(currUser,10,"N")
     } else if (currCategory == "Others similar to you like these movies"){
-      m_movies <- getCollaborativeFilteringMovies(currUser,10)
+      m_movies <- getCollaborativeFilteringMovies(currUser,10,"N")
     } else if (currCategory == "Movies with your favorite actors / actresses") {
-      m_movies <- getActorMovies(currUser,10)
+      m_movies <- getActorMovies(currUser,10,"N")
     }
     
     if (length(m_movies)>0) {
