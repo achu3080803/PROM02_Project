@@ -670,3 +670,5 @@ show_evaluation <- function()
 }
 
 show_evaluation()
+
+DCG_pos(1,10)

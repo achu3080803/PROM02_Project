@@ -46,82 +46,6 @@ all_userid_df <- as.data.frame(all_userid_t)
 head(all_userid_df)
 head(ratings_df)
 
-#G2 <-"MATCH a=(p:Person {name: 'Tom Hanks'})-[r:ACTED_IN]->(m:Movie) RETURN a;" %>% 
-# G2 <- 'MATCH a=(m:Movie {movieId: "1210"})-[:HAS_GENRE|ACTED_IN|DIRECTED|PRODUCED_BY|PRODUCED_IN]-(t)-[:HAS_GENRE|ACTED_IN|DIRECTED|PRODUCED_BY|PRODUCED_IN]-(other:Movie {movieId: "122886"}) return a' %>% 
-#   call_neo4j(con, type = "graph") 
-# 
-# # We'll just unnest the properties
-# G2$nodes <- G2$nodes %>%
-#   unnest_nodes(what = "properties")
-# #head(G2$nodes)  
-# 
-# # Add a new column
-# G2$nodes$group <- unlist(G2$nodes$label)  
-# G2$nodes$shape <- "circle" 
-# G2$nodes$image <- "" 
-# G2$nodes$icon <- vector(mode = "list", length = 10)
-# G2$nodes$label <- G2$nodes$title
-# 
-# typeof(G2$nodes[1,]$shape)
-# 
-# #G2$nodes[G2$nodes$group=="Movie",]$label = G2$nodes[G2$nodes$group=="Movie",]$title
-# G2$nodes[G2$nodes$group=="Movie",]$shape = "image"
-# G2$nodes[G2$nodes$group=="Movie",]$image = G2$nodes[G2$nodes$group=="Movie",]$poster
-# G2$nodes[G2$nodes$group=="Person",]$shape =""
-# G2$nodes[G2$nodes$group=="Person",]$label = G2$nodes[G2$nodes$group=="Person",]$name
-# G2$nodes[G2$nodes$group=="Company",]$label = G2$nodes[G2$nodes$group=="Company",]$name
-# G2$nodes[G2$nodes$group=="Genre",]$label = G2$nodes[G2$nodes$group=="Genre",]$name
-# G2$nodes[G2$nodes$group=="Country",]$label = G2$nodes[G2$nodes$group=="Country",]$name
-# G2$nodes$title <- G2$nodes$group
-# 
-# test<-list(list(code = "f007", color = "red"),list(code = "f007", color = "red"),list(code = "f007", color = "red"))
-# l<-length(G2$nodes[G2$nodes$group=="Person",]$icon)
-# 
-# test1<-G2$nodes[G2$nodes$group=="Person",]$icon
-# iconList <- vector(mode = "list", length = l)
-# iconList<-list(code = "f007", color = "red")
-# df<-data.frame(iconList)
-# df <- rbind(df, list(code = "f007", color = "red"))
-# rbind(df, list(code = "f007", color = "red"))
-# 
-# typeof(df[1,])
-# typeof(G2$nodes[G2$nodes$group=="Person",]$icon)
-# typeof(G2$nodes[G2$nodes$group=="Person",])
-# print(df[1,])
-# G2$nodes[G2$nodes$group=="Person",]$icon = list(list(code = "f007", color = "red"))
-# print(G2$nodes[G2$nodes$group=="Person",]$icon[1])
-# 
-# # Turn the relationships :
-# G2$relationships <- G2$relationships %>%
-#   unnest_relationships() %>%
-#   select(from = startNode, to = endNode, label = type)
-# 
-# typeof(G2$nodes)
-# 
-# G2nodesdf <- data.frame(G2$nodes)
-# visNetwork(G2$nodes, G2$relationships) %>% 
-#   visNodes(font = list(color = "#ffffff")) %>% 
-#   visGroups(groupname="Person",shape = "icon", icon = list(code = "f007", color = "red")) %>%
-#   visGroups(groupname="Movie",shape = "image") %>%
-#   visGroups(groupname="Company",shape = "dot") %>%
-#   visGroups(groupname="Genre",shape = "dot") %>%
-#   visGroups(groupname="Country",shape = "dot") %>%
-#   visEdges(font = list(color = "#ffffff", strokeColor = "#000000")) %>%
-#   visPhysics(barnesHut = list(springConstant=0)) %>%
-#   addFontAwesome()
-# 
-# visNetwork(G2$nodes, G2$relationships) %>% 
-#   visGroups(groupname="Person",shape = "icon", icon = list(code = "f007", color = "red")) %>%
-#   addFontAwesome()
-# 
-# d <- paste0("a",":","b")
-# params <- unlist(strsplit(d,":"))
-# print(params[2])
-# print(params)
-
-#head(G2$relationships)
-
-#visNetwork::visNetwork(G2$nodes, G2$relationships)
 
 ###############################################################################################
 # Load the data sets to data frames (END)
@@ -223,20 +147,6 @@ getRecentlyRatedMovies <- function(loginID, recLimit) {
   return (G)
 }
 
-# m<-getRecentlyRatedMovies(4,10)
-# head(m$nodes)
-# head(m$relationships)
-# length(m$nodes)
-#m$nodes[1,]$label
-#m$nodes[2,]$poster
-# m$nodes[1,]$title
-# m1<-m$nodes[-1,]
-# m1<-m$nodes[-(m$nodes[]$node_type=="Person"),]
-# head(m1)
-#m1$poster
-#head(G$nodes)
-# m$nodes[m$nodes[]$node_type=="Movie",]
-# m$nodes
 ###############################################################################################
 # Function getFavoriteMovies
 #
@@ -364,13 +274,7 @@ getContentBasedMovies <- function(loginID, recLimit, testMode) {
 
   return (R)
 }
-# m <- getContentBasedMovies(1,10)
-# head(m)
-# print(m$other.title[1,])
-# print(m$other.avg_rating[1,])
-# p<-m$other.title[1,]$value
-# print(p)
-# nrow(m$other.title)
+
 
 ###############################################################################################
 # Function getCollaborativeFilteringMovies
@@ -452,13 +356,6 @@ getCollaborativeFilteringMovies <- function(loginID, recLimit, testMode) {
   return (R)
 }
 
-# m <- getCollaborativeFilteringMovies(1,10)
-# head(m)
-# print(m$m.title[1,])
-# print(m$m.avg_rating[1,])
-# p<-m$m.title[1,]$value
-# print(p)
-# nrow(m$m.title)
 
 ###############################################################################################
 # Function getActorMovies
@@ -511,10 +408,6 @@ getActorMovies <- function(loginID, recLimit, testMode) {
 }
 
 
-# m <- getActorMovies(1,10)
-# p<-m$rec.title[1,]$value
-# print(p)
-
 ###############################################################################################
 # Function getTermMatrix
 #
@@ -558,57 +451,6 @@ getTermMatrix <- memoise(function(from_year, to_year, min_rating, max_rating) {
   sort(rowSums(m), decreasing = TRUE)
 })
 
-###############################################################################################
-# Function getTermMatrix
-#
-# Description:  Return a matrix that contains genres of the movies that satisfies the input criteria. 
-#               Using "memoise" to automatically cache the results
-# Input:        from_year - Starting movie production year
-#               to_year   - Ending movie production year
-#               min_rating - Minimum average ratings that the movie should have
-#               max_rating - Maximum average ratings that the movie should have
-# Output:       Return a matrix that contains genres of the movies that satisfies the input criteria.
-###############################################################################################
-# getTermMatrix <- memoise(function(from_year, to_year, min_rating, max_rating) {
-#   
-#   print("global.R - getTermMatrix")
-#   print(from_year)
-#   print(to_year)
-#   print(min_rating)
-#   print(max_rating)
-#   to_year1<-to_year+1
-#   
-#   query <- paste(" MATCH (g:Genre)-[HAS_GENRE]-(m:Movie) ",
-#                  " WHERE m.year >= ",from_year," and m.year <= ",to_year1," ",
-#                  " AND m.avg_rating >= ",min_rating," and m.avg_rating <= ",max_rating," ",
-#                  " RETURN g.name as genre", sep="")
-#   
-#   print(query)
-#   R <- query %>% 
-#     call_neo4j(con, type = "row") 
-#   
-#   # print(min(genres_df$year))
-#   # print(max(genres_df$year))
-#   if (nrow(R$genre) == 0 ){
-#     text <- c("NOTHING")
-#   }
-#   else {
-#     text <- as.vector(R$genre[,1]$value)
-#   }
-#   
-#   myCorpus = Corpus(VectorSource(text))
-#   myDTM = TermDocumentMatrix(myCorpus,
-#                              control = list(minWordLength = 1))
-#   
-#   m = as.matrix(myDTM)
-#   
-#   sort(rowSums(m), decreasing = TRUE)
-# })
- # t<-getTermMatrix(1905,2018,1,5)
- # print(t)
- # 
- # t<-getTermMatrix1(1905,2018,1,5)
- # print(t)
 
 ###############################################################################################
 # Function getTermMatrix
@@ -653,52 +495,7 @@ getTagMatrix <- memoise(function(from_year, to_year, min_rating, max_rating) {
   sort(rowSums(m), decreasing = TRUE)
 })
 
-###############################################################################################
-# Function getTermMatrix
-#
-# Description:  Return a matrix that contains tags of the movies that satisfies the input criteria. 
-#               Using "memoise" to automatically cache the results
-# Input:        from_year - Starting movie production year
-#               to_year   - Ending movie production year
-#               min_rating - Minimum average ratings that the movie should have
-#               max_rating - Maximum average ratings that the movie should have
-# Output:       Return a matrix that contains tags of the movies that satisfies the input criteria.
-###############################################################################################
-# getTagMatrix <- memoise(function(from_year, to_year, min_rating, max_rating) {
-#   
-#   print("global.R - getTagMatrix")
-#   print(from_year)
-#   print(to_year)
-#   print(min_rating)
-#   print(max_rating)
-#   to_year1<-to_year+1
-#   
-#   query <- paste(" MATCH (p:Person)-[t:TAGGED]-(m:Movie) ",
-#                  " WHERE m.year >= ",from_year," and m.year <= ",to_year1," ",
-#                  " AND m.avg_rating >= ",min_rating," and m.avg_rating <= ",max_rating," ",
-#                  " RETURN t.tag as tag", sep="")
-#   
-#   print(query)
-#   R <- query %>% 
-#     call_neo4j(con, type = "row") 
-#   
-#   # print(min(genres_df$year))
-#   # print(max(genres_df$year))
-#   if (nrow(R$tag) == 0 ){
-#     text <- c("NOTHING")
-#   }
-#   else {
-#     text <- as.vector(R$tag[,1]$value)
-#   }
-#   
-#   myCorpus = Corpus(VectorSource(text))
-#   myDTM = TermDocumentMatrix(myCorpus,
-#                              control = list(minWordLength = 1))
-#   
-#   m = as.matrix(myDTM)
-#   
-#   sort(rowSums(m), decreasing = TRUE)
-# })
+
 
 ###############################################################################################
 # Function getRatingHistogramDF
@@ -723,50 +520,7 @@ getRatingHistogramDF <- memoise(function(from_year, to_year) {
   return(ratings_df1)
 })
 
-###############################################################################################
-# Function getRatingHistogramDF
-#
-# Description:  Return a data frame that contains ratings of the movies that satisfies the input criteria. 
-#               Using "memoise" to automatically cache the results
-# Input:        from_year - Starting movie production year
-#               to_year   - Ending movie production year
-# Output:       Return a data frame that contains ratings of the movies that satisfies the input criteria. 
-###############################################################################################
-# getRatingHistogramDF <- memoise(function(from_year, to_year) {
-#   
-#   print("global.R - getRatingHistogramDF")
-#   print(from_year)
-#   print(to_year)
-#   to_year1<-to_year+1
-#   
-#   # from_year <- 2000
-#   # to_year1 <- 2002
-#   # min_rating <- 1
-#   # max_rating <- 5
-#   
-#   query <- paste(" MATCH (u:Person)-[r:REVIEWED]->(m:Movie) ",
-#                  " WHERE m.year >= ",from_year," and m.year <= ",to_year1," ",
-#                  " RETURN u.loginId as userId, m.movieId as movieId, m.avg_rating as avg_rating, r.rating as rating, r.timestamp as timestamp, m.year as year", sep="")
-#   
-#   print(query)
-#   R <- query %>% 
-#     call_neo4j(con, type = "row") 
-#   
-#   print("# of ratings_avg_df1")
-#   print(nrow(R$movieId))
-#   
-#   rating_df1 <- data.frame(
-#     userId = R$userId[,1]$value,
-#     movieId = R$movieId[,1]$value,
-#     avgRating = R$avg_rating[,1]$value,
-#     rating = R$rating[,1]$value,
-#     timestamp = R$timestamp[,1]$value,
-#     year = R$year[,1]$value
-#   )
-#   return(rating_df1)
-# })
-#t <- getRatingHistogramDF(1907,2002)
-#print(t)
+
 
 ###############################################################################################
 # Function getAvgRatingHistogramDF
@@ -791,45 +545,6 @@ getAvgRatingHistogramDF <- memoise(function(from_year, to_year) {
   return(ratings_avg_df1)
 })
 
-###############################################################################################
-# Function getAvgRatingHistogramDF
-#
-# Description:  Return a data frame that contains average ratings of the movies that satisfies the input criteria. 
-#               Using "memoise" to automatically cache the results
-# Input:        from_year - Starting movie production year
-#               to_year   - Ending movie production year
-# Output:       Return a data frame that contains average ratings of the movies that satisfies the input criteria. 
-###############################################################################################
-# getAvgRatingHistogramDF <- memoise(function(from_year, to_year) {
-#   
-#   print("global.R - getAvgRatingHistogramDF")
-#   print(from_year)
-#   print(to_year)
-#   to_year1<-to_year+1
-#   
-#   # from_year <- 2000
-#   # to_year1 <- 2002
-#   # min_rating <- 1
-#   # max_rating <- 5
-#   
-#   query <- paste(" MATCH (m:Movie) ",
-#                  " WHERE m.year >= ",from_year," and m.year <= ",to_year1," ",
-#                  " RETURN m.movieId as movieId, m.avg_rating as avg_rating, m.year as year", sep="")
-#   
-#   print(query)
-#   R <- query %>% 
-#     call_neo4j(con, type = "row") 
-#   
-#   print("# of ratings_avg_df1")
-#   print(nrow(R$movieId))
-#   
-#   rating_avg_df1 <- data.frame(
-#     movieId = R$movieId[,1]$value,
-#     avgRating = R$avg_rating[,1]$value,
-#     year = R$year[,1]$value
-#   )
-#   return(rating_avg_df1)
-# })
 
 ###############################################################################################
 # Function getUserRatingHistogramDF
@@ -853,44 +568,6 @@ getUserRatingHistogramDF <- memoise(function() {
   return(user_ratings_df2)
 })
 
-###############################################################################################
-# Function getTop10MovieDF
-#
-# Description:  Return a data frame that contains top 10 movies that satisfy the input criteria. 
-#               Using "memoise" to automatically cache the results
-# Input:        from_year - Starting year of the ratings
-#               to_year   - Ending year of the ratings
-#               minRatingCnt - Minimum number of ratings the movies should have
-# Output:       Return a data frame that contains top 10 movies that satisfy the input criteria.
-###############################################################################################
-# getTop10MovieDF <- memoise(function(from_year, to_year, minRatingCnt) {
-#   
-#   print("global.R - top10Movie")
-#   
-#   top10_df1 <- ratings_df %>%
-#     filter(between(ratedYear, from_year, to_year))
-#   
-#   # Find the average rating for each movie in each year
-#   top10_df2 <- aggregate(top10_df1[,3], list(top10_df1$movieId), mean)
-#   colnames(top10_df2)<- c("movieId", "avgRating")
-#   
-#   top10_df3 <- top10_df1 %>%
-#     group_by(movieId) %>%
-#     summarise(ratingCnt=n())
-#   
-#   top10_df4 <- left_join(top10_df2,top10_df3,c("movieId"))
-#   
-#   # Remove the movies that has number of ratings less than minRatingCnt
-#   top10_df5 <- top10_df4 %>%
-#     filter(ratingCnt>=minRatingCnt)
-#   
-#   top10_df6 <- top10_df5 %>%
-#     arrange(desc(top10_df5$avgRating, top10_df5$ratingCnt))
-#   
-#   top10_df7 <- head(top10_df6,10)
-#   
-#   return(top10_df7)
-# })
 
 ###############################################################################################
 # Function getTop10MovieDF
@@ -959,22 +636,6 @@ getContentBasedMovieGraph <- function(sourceMovieIdCsv, recMovieId) {
   
   # Add a new column
   G$nodes$group <- unlist(G$nodes$label)  
-  #G$nodes$shape <- "dot" 
-  # G$nodes$image <- "" 
-  # G$nodes$label <- G$nodes$title
-  # 
-  # #G$nodes[G$nodes$group=="Movie",]$shape = "image"
-  # G$nodes[G$nodes$group=="Movie",]$image = G$nodes[G$nodes$group=="Movie",]$poster
-  # G$nodes[G$nodes$group=="Person",]$image = "user_icon_red.png"
-  # G$nodes[G$nodes$group=="Person",]$label = G$nodes[G$nodes$group=="Person",]$name
-  # G$nodes[G$nodes$group=="Company",]$image = "film_company_icon_green.png"
-  # G$nodes[G$nodes$group=="Company",]$label = G$nodes[G$nodes$group=="Company",]$name
-  # G$nodes[G$nodes$group=="Genre",]$image = "genre_icon_pink.png"
-  # G$nodes[G$nodes$group=="Genre",]$label = G$nodes[G$nodes$group=="Genre",]$name
-  # G$nodes[G$nodes$group=="Country",]$image = "country_icon_blue.png"  
-  # G$nodes[G$nodes$group=="Country",]$label = G$nodes[G$nodes$group=="Country",]$name
-  # G$nodes$title <- G$nodes$group
-  # G$nodes$title <- paste('<p style="color:Black;font-size:14px">',G$nodes$group,'</p>')
   
   # Turn the relationships :
   G$relationships <- G$relationships %>%
@@ -1013,19 +674,6 @@ getCollaborativeFilteringMovieeGraph <- function(u1_loginId, u2_loginId, recMovi
   
   # Add a new column
   G$nodes$group <- unlist(G$nodes$label)  
-  #G$nodes$shape <- "dot" 
-  # G$nodes$image <- "" 
-  # G$nodes$label <- G$nodes$title
-  # 
-  # #G$nodes[G$nodes$group=="Movie",]$shape = "image"
-  # G$nodes[G$nodes$group=="Movie",]$image = G$nodes[G$nodes$group=="Movie",]$poster
-  # G$nodes[G$nodes$group=="Person",]$image = "www/user_icon_red.png"
-  # G$nodes[G$nodes$group=="Person",]$label = G$nodes[G$nodes$group=="Person",]$name
-  # G$nodes[G$nodes$group=="Company",]$label = G$nodes[G$nodes$group=="Company",]$name
-  # G$nodes[G$nodes$group=="Genre",]$label = G$nodes[G$nodes$group=="Genre",]$name
-  # G$nodes[G$nodes$group=="Country",]$label = G$nodes[G$nodes$group=="Country",]$name
-  # G$nodes$title <- G$nodes$group
-  # G$nodes$title <- paste('<p style="color:Black;font-size:14px">',G$nodes$group,'</p>')
   
   # Turn the relationships :
   G$relationships <- G$relationships %>%
@@ -1067,17 +715,6 @@ getActorMovieGraph <- function(sourceMovieIdCsv, recMovieId) {
   
     # Add a new column
     G$nodes$group <- unlist(G$nodes$label)  
-    #G$nodes$shape <- "dot" 
-    # G$nodes$image <- "" 
-    # G$nodes$label <- G$nodes$title
-    # 
-    # #G$nodes[G$nodes$group=="Movie",]$shape = "image"
-    # G$nodes[G$nodes$group=="Movie",]$image = G$nodes[G$nodes$group=="Movie",]$poster
-    # G$nodes[G$nodes$group=="Person",]$label = G$nodes[G$nodes$group=="Person",]$name
-    # G$nodes[G$nodes$group=="Company",]$label = G$nodes[G$nodes$group=="Company",]$name
-    # G$nodes[G$nodes$group=="Genre",]$label = G$nodes[G$nodes$group=="Genre",]$name
-    # G$nodes[G$nodes$group=="Country",]$label = G$nodes[G$nodes$group=="Country",]$name
-    # G$nodes$title <- paste('<p style="color:Black;font-size:14px">',G$nodes$group,'</p>')
     
     # Turn the relationships :
     G$relationships <- G$relationships %>%
@@ -1160,10 +797,7 @@ updateMovieRating <- function(loginId, movieId, rating) {
   print(movieId)
   print(rating)
   
-  #query <- paste(' MATCH (m:Movie)-[r:REVIEWED]-(p:Person {loginId: ',loginId,' }) WHERE m.movieId = "',movieId,'" SET r.rating = ',rating, sep="")
-  # query <- paste(' MATCH (m:Movie)-[r:REVIEWED]-(p:Person {loginId: ',loginId,' }) ', 
-  #                ' WITH m,r,p,apoc.date.currentTimestamp()/1000 as ts ',
-  #                ' WHERE m.movieId = "',movieId,'" SET r.rating = ',rating,', r.timestamp=ts, r.review_date = apoc.date.format(apoc.convert.toInteger(ts),"s","yyyy-MM-dd HH:mm:ss zzz")',sep="")
+
   query <- paste(' MATCH (m:Movie {movieId: "',movieId,'"}), (p:Person {loginId: ',loginId,'}) ',
                  ' WITH p, m, apoc.date.currentTimestamp()/1000 as ts ',
                  ' MERGE (p)-[r:REVIEWED]->(m) ',

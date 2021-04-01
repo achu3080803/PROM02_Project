@@ -92,7 +92,6 @@ ui <- dashboardPage(
                 box(
                   width = 10,
                   column(7,textInput("searchMovieTitle", "Please enter Movie Title below:")),
-                  #column(3,actionButton("movieSearch", "Search"))
                 )
               ),
               fluidRow(
@@ -214,19 +213,11 @@ ui <- dashboardPage(
         ),
         fluidRow(
           htmlOutput("selectedMovieCategory"),
-          x <- uiOutput('radioMovieTiles'),
-          #actionButton('submit', label = "Submit"),
-          #br(),
-          #print(paste("Radiobutton response is:", "reply")),
-          #textOutput('text')
+          x <- uiOutput('radioMovieTiles')
         ),
-         # visNetworkOutput("myNetId",
-         #                  height <- "1200",
-         #                  width <- "600"),
          visNetworkOutput("movieGraph",
                          height <- "2000",
                          width <- "1000")
-        #)
       )
     )
   )
@@ -655,7 +646,6 @@ server <- function(input, output) {
     rb_choiceValues=list()
     
     m_movies <- searchdMovies(i_movie_title,30)
-    #m_movies <- NULL
     
     if (length(m_movies)>0) {
       
@@ -682,7 +672,6 @@ server <- function(input, output) {
       radioButtons('movieChoice2', "", choiceNames=rb_choiceNames, choiceValues=rb_choiceValues, inline=TRUE)
     }
     else {
-      #rb_choiceNames <- c("No Movies")
       movie_id <- 0
       movie_title <- "No Movie Found"
       movie_poster <- "movie_star.jpg"
@@ -693,11 +682,16 @@ server <- function(input, output) {
       HTML(m_tile)
     }
     
-    # The options are dynamically generated on the server
-    #radioButtons('movieChoice2', "", choiceNames=rb_choiceNames, choiceValues=rb_choiceValues, inline=TRUE)
     
   })
   
+  ###############################################################################################
+  # Function observeEvent
+  #
+  # Description:  Function to observe an event of pressing the "Submit" button in Movie Rating page.
+  # Input:        
+  # Output:       
+  ###############################################################################################
   observeEvent(input$submitRating, {
       
     if (!is.null(input$movieChoice2) && !is.null(input$movieRating)) {
@@ -712,39 +706,14 @@ server <- function(input, output) {
     }
   })
   
-  # observe({
-  #   input$submitRating
-  #   
-  #   isolate(
-  #     output$text <- renderText({
-  #       paste("Radiobutton response is:", input$movieChoice2 )
-  #     })
-  #   )
-  # })
 
   ###############################################################################################
-  # Function submitRating
+  # Function output$chosenMovie
   #
-  # Description:  Reactive function to a matrix of genres that satisfy the criteria
+  # Description:  Function to render UI for showing the chosen movie in the Movie Rating page.
   # Input:        
-  # Output:       Matrix of genres that satisfy the criteria
+  # Output:       R Shiny UI
   ###############################################################################################
-  # submitRating <- reactive({
-  #   # Change when the "submitRating" button is pressed...
-  #   input$submitRating
-  #   # ...but not for anything else
-  #   print(paste("submitRating: ",input$movieChoice2))  
-  #   return (input$movieChoice2)
-  #   
-  # })  
-  # 
-  # output$text <- renderText({
-  #   v <- submitRating()
-  #   isolate({
-  #     paste("Selected movie is:", v,"<br>", "" )
-  #   })
-  # })
-  
   output$chosenMovie <- renderUI({
     movieChoice <- unlist(strsplit(as.character(input$movieChoice2),";"))
     movie_title <- movieChoice[2]
@@ -765,6 +734,13 @@ server <- function(input, output) {
     
   })
   
+  ###############################################################################################
+  # Function output$movieRating
+  #
+  # Description:  Function to render text for showing the details of the chosen movie in the Movie Rating page.
+  # Input:        
+  # Output:       HTML text
+  ###############################################################################################
   output$movieRating <- renderText({
     paste('<font size="+2">The movie was rated as',input$movieRating,'</font>')
   })
@@ -976,8 +952,6 @@ server <- function(input, output) {
     print("# of Rating")
     print(nrow(v))
     
-    # ratings_df2 <- ratings_df %>%
-    #   filter(between(year, input$year2[1],input$year2[2]))
     
     ggplot(data=v, aes(rating)) + 
     geom_histogram(breaks=seq(0, 5, by=0.5), 
@@ -1074,14 +1048,6 @@ server <- function(input, output) {
   ###############################################################################################
   compose_movie_tile_html <- function(movie_title, movie_poster, poster_height, poster_width, star_rating, score){
     movie_tile <- NULL
-    # movie_tile <- append(movie_tile, '<div class="gallery">')
-    # movie_tile <- append(movie_tile, paste0('<img src="',movie_poster,'" alt="',movie_title,'" height="',poster_height,'" width="',poster_width,'" ContentType="Images/jpeg" >'))
-    # movie_tile <- append(movie_tile, '<div class="ratings">')
-    # movie_tile <- append(movie_tile, '<div class="empty-stars"></div>')
-    # movie_tile <- append(movie_tile, paste0('<div class="full-stars", style="width:',star_rating,'%"></div>'))
-    # movie_tile <- append(movie_tile, '</div>')
-    # movie_tile <- append(movie_tile, paste0('<div class="desc" >',movie_title,'</div>'))
-    # movie_tile <- append(movie_tile, '</div>')
     
     movie_tile <- paste0('<div class="gallery">',
                          '<img src="',movie_poster,'" alt="',movie_title,'" height="',poster_height,'" width="',poster_width,'" ContentType="Images/jpeg" >',
@@ -1131,6 +1097,13 @@ server <- function(input, output) {
     print(m_posters)
   })
   
+  ###############################################################################################
+  # Function output$radioMovieTiles
+  #
+  # Description:  Return UI that contains a list of radio buttons with movie posters
+  # Input:        
+  # Output:       Return UI that contains a list of radio buttons with movie posters
+  ###############################################################################################
   output$radioMovieTiles <- renderUI({
     print("radioMovieTiles")
     currUser=get_analyze_user()
@@ -1188,17 +1161,14 @@ server <- function(input, output) {
     radioButtons('movieChoice', "", choiceNames=rb_choiceNames, choiceValues=rb_choiceValues, inline=TRUE)
 
   })
-  # observe({
-  #   input$submit
-  #   
-  #   isolate(
-  #     output$text <- renderText({
-  #       paste("Radiobutton response is:", input$movieChoice )
-  #     })
-  #   )
-  # })
   
-  
+  ###############################################################################################
+  # Function output$myNetId
+  #
+  # Description:  Return a VisNetwork object to display the knowledge graph
+  # Input:        
+  # Output:       Return a VisNetwork object to display the knowledge graph
+  ###############################################################################################
   output$myNetId <- renderVisNetwork({
     visNetwork(nodes, edges)
   })
@@ -1220,18 +1190,10 @@ server <- function(input, output) {
         params<-unlist(strsplit(input$movieChoice, ":"))
         G <- getActorMovieGraph(params[1],params[2])
       }
-    
-    
-      # visNetwork(G$nodes, G$relationships) %>% 
-      #   visNodes(font = list(color = "#ffffff")) %>% 
-      #   visEdges(font = list(color = "#ffffff", strokeColor = "#000000")) %>%
-      #   visPhysics(barnesHut = list(springConstant=0)) %>%
-      #   addFontAwesome()
       
       G$nodes$image <- "" 
       G$nodes$label <- G$nodes$title
       
-      #G$nodes[G$nodes$group=="Movie",]$shape = "image"
       G$nodes[G$nodes$group=="Movie",]$image = G$nodes[G$nodes$group=="Movie",]$poster
       G$nodes[G$nodes$group=="Person",]$image = "user_icon_red.png"
       G$nodes[G$nodes$group=="Person",]$label = G$nodes[G$nodes$group=="Person",]$name
@@ -1255,14 +1217,6 @@ server <- function(input, output) {
         visPhysics(barnesHut = list(springConstant=0)) %>%
         addFontAwesome()
       
-      # nodes <- data.frame(id = 1:3, group = c("Person", "A", "Person"), shape=c("","",""))
-      # edges <- data.frame(from = c(1,2), to = c(2,3))
-      # 
-      # visNetwork(nodes, edges, width = "100%") %>%
-      #   visGroups(groupname = "A", shape = "icon", icon = list(code = "f0c0", size = 75)) %>%
-      #   visGroups(groupname = "Person", shape = "icon", icon = list(code = "f007", color = "red")) %>%
-      #   visLegend() %>%
-      #   addFontAwesome()
     }
   })
   
